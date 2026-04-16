@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LogMyStack — The logbook for peptide users</title>
+<meta name="description" content="Build your stack, log your doses, track your outcomes. A structured logbook for serious peptide users. Free beta coming soon.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="LogMyStack — The logbook for peptide users">
+<meta property="og:description" content="Build your stack, log your doses, track your outcomes. A structured logbook for serious peptide users.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://logmystack.com">
+<meta name="twitter:card" content="summary_large_image">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0a0a;
+    --panel: #111111;
+    --panel-2: #161616;
+    --border: #262626;
+    --text: #fafafa;
+    --muted: #a3a3a3;
+    --muted-2: #737373;
+    --accent: #34d399;
+  }
+  * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; box-sizing: border-box; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  html, body {
+    background-color: #0a0a0a !important;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .gradient-bg {
+    background-image:
+      radial-gradient(1200px 500px at 50% -100px, rgba(52,211,153,0.10), transparent 60%),
+      radial-gradient(800px 400px at 20% 40%, rgba(52,211,153,0.05), transparent 50%);
+    background-color: #0a0a0a;
+  }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
+  .muted { color: var(--muted); }
+  .muted-2 { color: var(--muted-2); }
+  .accent-text { color: var(--accent); }
+
+  .input-field {
+    background: #0a0a0a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  .input-field:focus { outline: none; border-color: rgba(52,211,153,0.5); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #052e1a;
+    font-weight: 600;
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+
+  .btn-secondary {
+    background: #1a1a1a;
+    color: #e5e5e5;
+    border: 1px solid var(--border);
+    font-weight: 500;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover { background: #222; border-color: #3a3a3a; }
+
+  .layer-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .layer-card:hover { border-color: rgba(52,211,153,0.25); transform: translateY(-2px); }
+  .layer-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .layer-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px rgba(52,211,153,0.6);
+  }
+
+  .hero-title {
+    font-size: clamp(40px, 6vw, 68px);
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    color: #fafafa;
+  }
+  .hero-accent {
+    background: linear-gradient(90deg, #34d399, #6ee7b7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(52,211,153,0.08);
+    border: 1px solid rgba(52,211,153,0.25);
+    color: var(--accent);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+</style>
+</head>
+<body class="gradient-bg">
+
+<!-- Header -->
+<header class="border-b" style="border-color: var(--border);">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2" style="text-decoration: none; color: inherit;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2 L22 8 L22 16 L12 22 L2 16 L2 8 Z" stroke="#34d399" stroke-width="1.5"/>
+        <path d="M12 8 L17 11 L17 13 L12 16 L7 13 L7 11 Z" fill="#34d399"/>
+      </svg>
+      <span class="text-base font-bold tracking-tight">LogMyStack</span>
+    </a>
+    <div class="flex items-center gap-3">
+      <a href="/calc" class="text-sm muted hover:text-white" style="text-decoration: none;">Calculator</a>
+      <a href="#waitlist" class="btn-secondary">Get early access</a>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-6">
+
+  <!-- Hero -->
+  <section class="pt-20 pb-16 md:pt-28 md:pb-24">
+    <div class="pill mb-7"><span>●</span>FREE BETA · COMING SOON</div>
+    <h1 class="hero-title mb-6">
+      The logbook for <span class="hero-accent">serious and curious peptide users.</span>
+    </h1>
+    <p class="text-lg md:text-xl muted max-w-2xl leading-relaxed mb-9">
+      Whether you're running your third cycle or just starting to look into peptides — build your stack, log your doses, track your outcomes, and compare notes with the people running the same protocols. Without the spreadsheets, the Reddit-thread scavenger hunts, or the guesswork.
+    </p>
+    <div class="flex flex-wrap gap-3">
+      <a href="#waitlist" class="btn-primary">Get early access</a>
+      <a href="/calc" class="btn-secondary">Try the free calculator →</a>
+    </div>
+  </section>
+
+  <!-- Three layers -->
+  <section class="py-14">
+    <div class="text-xs mono uppercase tracking-widest accent-text mb-3">What we're building</div>
+    <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-12" style="letter-spacing: -0.025em;">Three layers. One logbook.</h2>
+
+    <div class="grid md:grid-cols-3 gap-5">
+      <div class="layer-card">
+        <div class="layer-badge"><span class="layer-badge-dot"></span>Layer 1 · The Log</div>
+        <div class="text-xl font-semibold mb-3">Your personal tracker.</div>
+        <p class="muted text-sm leading-relaxed">
+          A structured replacement for the spreadsheet. Dose, frequency, vendor, duration — plus daily outcome metrics and a cycle view that actually shows you what's working.
+        </p>
+        <div class="mt-5 text-xs mono" style="color: var(--muted-2);">Available in beta</div>
+      </div>
+
+      <div class="layer-card">
+        <div class="layer-badge"><span class="layer-badge-dot"></span>Layer 2 · The Feed</div>
+        <div class="text-xl font-semibold mb-3">Protocols, not anecdotes.</div>
+        <p class="muted text-sm leading-relaxed">
+          Reddit-style posts, but every post carries the author's structured data inline — a verified protocol card with dose, duration, vendor, and outcomes. Context turns anecdote into signal.
+        </p>
+        <div class="mt-5 text-xs mono" style="color: var(--muted-2);">Next release</div>
+      </div>
+
+      <div class="layer-card">
+        <div class="layer-badge"><span class="layer-badge-dot"></span>Layer 3 · The Atlas</div>
+        <div class="text-xl font-semibold mb-3">What actually works.</div>
+        <p class="muted text-sm leading-relaxed">
+          Anonymized insights across the whole dataset. Compound effectiveness by goal. Vendor purity leaderboards. Stack compatibility. The signal that doesn't exist anywhere else today.
+        </p>
+        <div class="mt-5 text-xs mono" style="color: var(--muted-2);">Long-term roadmap</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Calculator CTA -->
+  <section class="py-14">
+    <div class="panel p-8 md:p-10" style="background: linear-gradient(135deg, rgba(52,211,153,0.06), transparent 60%); border-color: rgba(52,211,153,0.2);">
+      <div class="grid md:grid-cols-3 gap-8 items-center">
+        <div class="md:col-span-2">
+          <div class="text-xs mono uppercase tracking-widest accent-text mb-2">Free tool · No login</div>
+          <h3 class="text-2xl md:text-3xl font-bold mb-3 tracking-tight" style="letter-spacing: -0.02em;">Peptide Reconstitution Calculator</h3>
+          <p class="muted mb-0">
+            Mix a new vial or draw an existing one. Works for BPC-157, TB-500, semaglutide, tirzepatide, retatrutide, and more. Built by users who got tired of the bad math on forum threads.
+          </p>
+        </div>
+        <div class="md:text-right">
+          <a href="/calc" class="btn-primary">Open calculator →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Waitlist -->
+  <section id="waitlist" class="py-16">
+    <div class="max-w-2xl">
+      <div class="text-xs mono uppercase tracking-widest accent-text mb-3">Free beta</div>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-5" style="letter-spacing: -0.025em;">Get on the list.</h2>
+      <p class="muted mb-7 leading-relaxed">
+        We're onboarding the first 100 users by hand. Drop your email and we'll reach out when it's your turn. No spam, no upsells — if you're already running a stack, we want your feedback.
+      </p>
+      <form class="flex flex-col sm:flex-row gap-2 max-w-lg" onsubmit="handleWaitlist(event)">
+        <input id="waitlist-email" type="email" placeholder="you@email.com" required class="input-field flex-1">
+        <button type="submit" class="btn-primary whitespace-nowrap">Request access</button>
+      </form>
+      <div id="waitlist-success" class="text-sm accent-text mt-3 hidden">You're on the list. We'll be in touch.</div>
+      <div class="text-xs mt-4" style="color: var(--muted-2);">We'll never sell your email. Unsubscribe anytime.</div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="pt-12 pb-10 border-t text-sm muted mt-12" style="border-color: var(--border);">
+    <div class="flex flex-col md:flex-row justify-between gap-6">
+      <div class="flex items-center gap-2">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2 L22 8 L22 16 L12 22 L2 16 L2 8 Z" stroke="#34d399" stroke-width="1.5"/>
+          <path d="M12 8 L17 11 L17 13 L12 16 L7 13 L7 11 Z" fill="#34d399"/>
+        </svg>
+        <span class="font-semibold text-white">LogMyStack</span>
+      </div>
+      <div class="flex gap-5 text-xs">
+        <a href="/calc" class="hover:text-white" style="text-decoration: none;">Calculator</a>
+        <a href="#waitlist" class="hover:text-white" style="text-decoration: none;">Waitlist</a>
+        <a href="mailto:hello@logmystack.com" class="hover:text-white" style="text-decoration: none;">Contact</a>
+      </div>
+    </div>
+    <div class="mt-6 text-xs leading-relaxed" style="color: var(--muted-2);">
+      © 2026 LogMyStack · For research and informational purposes only · Not medical advice · Peptides referenced are not FDA-approved for human use · Consult a qualified physician before starting any protocol.
+    </div>
+  </footer>
+
+</main>
+
+<script>
+  function handleWaitlist(e) {
+    e.preventDefault();
+    // TODO: wire to real email service (ConvertKit, Buttondown, Resend, or a Google Form)
+    const email = document.getElementById('waitlist-email').value;
+    console.log('Waitlist signup:', email);
+    document.getElementById('waitlist-success').classList.remove('hidden');
+    document.getElementById('waitlist-email').value = '';
+  }
+</script>
+
+</body>
+</html>

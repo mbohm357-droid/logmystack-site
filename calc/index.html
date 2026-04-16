@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peptide Reconstitution Calculator — LogMyStack</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<meta name="description" content="Free peptide reconstitution calculator. Figure out how many units to draw on an insulin syringe, or how much bacteriostatic water to add when mixing a new vial.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0a0a">
+<style>
+  :root { color-scheme: dark; }
+  :root {
+    --bg: #0a0a0a;
+    --panel: #111111;
+    --panel-2: #161616;
+    --border: #262626;
+    --text: #fafafa;
+    --muted: #737373;
+    --muted-2: #525252;
+    --accent: #34d399;
+    --accent-dim: #064e3b;
+    --warn: #fbbf24;
+    --error: #f87171;
+  }
+  * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; box-sizing: border-box; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  html, body { background-color: #0a0a0a !important; color: var(--text); -webkit-font-smoothing: antialiased; min-height: 100vh; margin: 0; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
+  .panel-2 { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; }
+  .accent-text { color: var(--accent); }
+  .muted { color: var(--muted); }
+  .muted-2 { color: var(--muted-2); }
+  .gradient-bg { background-image: radial-gradient(1200px 500px at 50% -100px, rgba(52,211,153,0.08), transparent 60%); background-color: #0a0a0a; }
+
+  .input-field {
+    background: #0a0a0a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 18px;
+    width: 100%;
+    transition: border-color 0.15s;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+  }
+  .input-field:focus { outline: none; border-color: rgba(52,211,153,0.5); }
+  .input-label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .unit-pill {
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .unit-pill.active { background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.35); color: var(--accent); }
+
+  .preset-pill {
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    color: #d4d4d4;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .preset-pill:hover { background: #262626; border-color: #3a3a3a; color: white; }
+  .preset-pill.active { background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.35); color: var(--accent); }
+
+  /* Mode tabs */
+  .mode-tab {
+    flex: 1;
+    background: #111;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: left;
+    position: relative;
+  }
+  .mode-tab:hover { background: #161616; border-color: #3a3a3a; }
+  .mode-tab.active {
+    background: linear-gradient(180deg, rgba(52,211,153,0.06), transparent);
+    border-color: rgba(52,211,153,0.3);
+  }
+  .mode-tab-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .mode-tab.active .mode-tab-badge { color: var(--accent); }
+  .mode-tab-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2a2a2a;
+  }
+  .mode-tab.active .mode-tab-indicator { background: var(--accent); box-shadow: 0 0 12px rgba(52,211,153,0.6); }
+
+  /* Syringe */
+  .syringe {
+    width: 100%;
+    height: 48px;
+    background: #0f0f0f;
+    border: 1.5px solid #2a2a2a;
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+  .syringe-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, rgba(52,211,153,0.7), rgba(52,211,153,0.35));
+    border-right: 2px solid var(--accent);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+  }
+  .syringe-ticks { position: absolute; inset: 0; display: flex; justify-content: space-between; pointer-events: none; }
+  .tick { width: 1px; background: #2a2a2a; height: 100%; }
+  .tick-major { background: #404040; }
+  .syringe-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 4px; }
+
+  .result-big {
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    font-feature-settings: "tnum";
+  }
+  .result-medium {
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-feature-settings: "tnum";
+  }
+
+  .btn-primary { background: var(--accent); color: #052e1a; font-weight: 600; padding: 12px 22px; border-radius: 10px; font-size: 14px; cursor: pointer; border: none; transition: opacity 0.15s; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-secondary { background: #1a1a1a; color: #e5e5e5; border: 1px solid var(--border); font-weight: 500; padding: 10px 18px; border-radius: 10px; font-size: 13px; cursor: pointer; }
+
+  .mode-section { display: none; }
+  .mode-section.active { display: block; }
+
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input[type="number"] { -moz-appearance: textfield; }
+</style>
+</head>
+<body class="gradient-bg">
+
+<!-- Header -->
+<header class="border-b" style="border-color: var(--border);">
+  <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity" style="text-decoration: none; color: inherit;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2 L22 8 L22 16 L12 22 L2 16 L2 8 Z" stroke="#34d399" stroke-width="1.5"/>
+        <path d="M12 8 L17 11 L17 13 L12 16 L7 13 L7 11 Z" fill="#34d399"/>
+      </svg>
+      <span class="text-base font-bold tracking-tight">LogMyStack</span>
+    </a>
+    <div class="flex items-center gap-3">
+      <a href="/" class="text-sm muted hover:text-white">Home</a>
+      <a href="/#waitlist" class="btn-secondary">Get early access</a>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-6 py-10">
+
+  <!-- Restrained title header -->
+  <div class="mb-6">
+    <div class="text-xs mono uppercase tracking-widest mb-2" style="color: var(--muted-2);">Free · No login required · For research purposes only</div>
+    <h1 class="text-2xl font-semibold tracking-tight" style="color: #fafafa;">Peptide Reconstitution Calculator</h1>
+  </div>
+
+  <!-- Mode selector -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+    <button class="mode-tab active" data-mode="draw">
+      <div class="mode-tab-badge"><span class="mode-tab-indicator"></span>DAILY USE</div>
+      <div class="text-base font-semibold mb-1" style="color: #fafafa;">Draw a dose</div>
+      <div class="text-sm" style="color: #a3a3a3;">Your vial is already mixed. Calculate how many units to draw on your insulin syringe for each injection.</div>
+    </button>
+    <button class="mode-tab" data-mode="mix">
+      <div class="mode-tab-badge"><span class="mode-tab-indicator"></span>NEW VIAL</div>
+      <div class="text-base font-semibold mb-1" style="color: #fafafa;">Mix a new vial</div>
+      <div class="text-sm" style="color: #a3a3a3;">You just opened a fresh vial. Calculate how much bacteriostatic water to add when reconstituting it.</div>
+    </button>
+  </div>
+
+  <!-- Presets -->
+  <div class="mb-6">
+    <div class="text-xs muted mono uppercase tracking-widest mb-3">Quick start</div>
+    <div class="flex flex-wrap gap-2">
+      <button class="preset-pill" data-preset="custom">Custom</button>
+      <button class="preset-pill active" data-preset="bpc157">BPC-157</button>
+      <button class="preset-pill" data-preset="tb500">TB-500</button>
+      <button class="preset-pill" data-preset="semaglutide">Semaglutide</button>
+      <button class="preset-pill" data-preset="tirzepatide">Tirzepatide</button>
+      <button class="preset-pill" data-preset="retatrutide">Retatrutide</button>
+      <button class="preset-pill" data-preset="ipamorelin">Ipamorelin</button>
+      <button class="preset-pill" data-preset="cjc1295">CJC-1295</button>
+      <button class="preset-pill" data-preset="ghkcu">GHK-Cu</button>
+    </div>
+    <div id="preset-note" class="text-xs mt-3 hidden" style="color: #a3a3a3;"></div>
+  </div>
+
+  <!-- ============ DRAW MODE ============ -->
+  <section id="mode-draw" class="mode-section active">
+    <div class="grid md:grid-cols-2 gap-6">
+
+      <div class="panel p-6">
+        <h2 class="font-semibold mb-5 flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center mono text-xs" style="background: rgba(52,211,153,0.1); color: var(--accent);">1</span>
+          Your vial
+        </h2>
+        <div class="space-y-5">
+          <div>
+            <label class="input-label">Peptide amount in vial</label>
+            <div class="relative">
+              <input type="number" id="draw-vial-mg" class="input-field pr-14" step="0.5" min="0" value="5">
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm muted mono">mg</span>
+            </div>
+            <div class="text-xs muted mt-1.5">Check the vial label (usually 2, 5, 10, 15, or 20 mg)</div>
+          </div>
+          <div>
+            <label class="input-label">Bacteriostatic water added</label>
+            <div class="relative">
+              <input type="number" id="draw-bac-ml" class="input-field pr-14" step="0.5" min="0.5" value="2">
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm muted mono">mL</span>
+            </div>
+            <div class="text-xs muted mt-1.5">How much BAC water you mixed into the vial</div>
+          </div>
+        </div>
+
+        <hr class="my-6" style="border-color: var(--border);">
+
+        <h2 class="font-semibold mb-5 flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center mono text-xs" style="background: rgba(52,211,153,0.1); color: var(--accent);">2</span>
+          Your dose
+        </h2>
+        <div>
+          <label class="input-label">Target dose per injection</label>
+          <div class="relative">
+            <input type="number" id="draw-dose" class="input-field pr-20" step="25" min="0" value="500">
+            <div class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+              <button class="unit-pill active" data-draw-unit="mcg">mcg</button>
+              <button class="unit-pill" data-draw-unit="mg">mg</button>
+            </div>
+          </div>
+          <div class="text-xs muted mt-1.5">Common: BPC/TB-500 in mcg · GLP-1s in mg</div>
+        </div>
+      </div>
+
+      <div class="panel p-6" style="background: linear-gradient(180deg, rgba(52,211,153,0.04), transparent 40%);">
+        <h2 class="font-semibold mb-5 flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center mono text-xs" style="background: rgba(52,211,153,0.1); color: var(--accent);">3</span>
+          Draw this much
+        </h2>
+
+        <div class="panel-2 p-5 mb-4">
+          <div class="text-xs muted mono uppercase tracking-widest mb-2">Insulin syringe (U-100)</div>
+          <div class="flex items-baseline gap-2 mb-4">
+            <span class="result-big accent-text" id="draw-out-units">20.0</span>
+            <span class="text-lg muted mono">units</span>
+          </div>
+          <div class="syringe">
+            <div class="syringe-fill" id="draw-syringe-fill"></div>
+            <div class="syringe-ticks">
+              <span class="tick tick-major"></span><span class="tick"></span><span class="tick"></span><span class="tick"></span><span class="tick"></span>
+              <span class="tick tick-major"></span><span class="tick"></span><span class="tick"></span><span class="tick"></span><span class="tick"></span>
+              <span class="tick tick-major"></span>
+            </div>
+          </div>
+          <div class="syringe-labels"><span>0</span><span>50</span><span>100</span></div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="panel-2 p-3">
+            <div class="text-xs muted mono uppercase tracking-wider mb-1">Volume</div>
+            <div class="result-medium"><span id="draw-out-volume">0.20</span> <span class="text-sm muted mono font-normal">mL</span></div>
+          </div>
+          <div class="panel-2 p-3">
+            <div class="text-xs muted mono uppercase tracking-wider mb-1">Concentration</div>
+            <div class="result-medium"><span id="draw-out-conc">2500</span> <span class="text-sm muted mono font-normal">mcg/mL</span></div>
+          </div>
+          <div class="panel-2 p-3">
+            <div class="text-xs muted mono uppercase tracking-wider mb-1">Doses / vial</div>
+            <div class="result-medium"><span id="draw-out-doses">10</span></div>
+          </div>
+        </div>
+
+        <div id="draw-error" class="mt-4 p-3 rounded-lg text-sm hidden" style="background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); color: #fca5a5;"></div>
+      </div>
+    </div>
+
+    <details class="panel p-5 mt-6 cursor-pointer">
+      <summary class="font-semibold text-sm select-none">Show the math</summary>
+      <div class="mt-4 text-sm muted space-y-2 mono" id="draw-math"></div>
+    </details>
+  </section>
+
+  <!-- ============ MIX MODE ============ -->
+  <section id="mode-mix" class="mode-section">
+    <div class="grid md:grid-cols-2 gap-6">
+
+      <div class="panel p-6">
+        <h2 class="font-semibold mb-5 flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center mono text-xs" style="background: rgba(52,211,153,0.1); color: var(--accent);">1</span>
+          Your vial
+        </h2>
+        <div>
+          <label class="input-label">Peptide amount in vial</label>
+          <div class="relative">
+            <input type="number" id="mix-vial-mg" class="input-field pr-14" step="0.5" min="0" value="5">
+            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm muted mono">mg</span>
+          </div>
+          <div class="text-xs muted mt-1.5">Check the vial label (usually 2, 5, 10, 15, or 20 mg)</div>
+        </div>
+
+        <hr class="my-6" style="border-color: var(--border);">
+
+        <h2 class="font-semibold mb-5 flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center mono text-xs" style="background: rgba(52,211,153,0.1); color: var(--accent);">2</span>
+          Your target
+        </h2>
+        <div class="space-y-5">
+          <div>
+            <label class="input-label">Target dose per injection</label>
+            <div class="relative">
+              <input type="number" id="mix-dose" class="input-field pr-20" step="25" min="0" value="500">
+              <div class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                <button class="unit-pill active" data-mix-unit="mcg">mcg</button>
+                <button class="unit-pill" data-mix-unit="mg">mg</button>
+              </div>
+            </div>
+            <div class="text-xs muted mt-1.5">How much peptide you want per injection</div>
+          </div>
+          <div>
+            <label class="input-label">Desired units per dose (on U-100 syringe)</label>
+            <div class="relative">
+              <input type="number" id="mix-units" class="input-field pr-20" step="5" min="1" max="100" value="20">
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm muted mono">units</span>
+            </div>
+            <div class="text-xs muted mt-1.5">How many units you want to draw each time. 10–30 is easiest to measure accurately.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel p-6" style="background: linear-gradient(180deg, rgba(52,211,153,0.04), transparent 40%);">
+        <h2 class="font-semibold mb-5 flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center mono text-xs" style="background: rgba(52,211,153,0.1); color: var(--accent);">3</span>
+          Add this much water
+        </h2>
+
+        <div class="panel-2 p-5 mb-4">
+          <div class="text-xs muted mono uppercase tracking-widest mb-2">Bacteriostatic water to add</div>
+          <div class="flex items-baseline gap-2 mb-2">
+            <span class="result-big accent-text" id="mix-out-water">2.0</span>
+            <span class="text-lg muted mono">mL</span>
+          </div>
+          <div class="text-xs muted">Inject this much BAC water into the vial, then swirl gently until dissolved.</div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="panel-2 p-3">
+            <div class="text-xs muted mono uppercase tracking-wider mb-1">Volume / dose</div>
+            <div class="result-medium"><span id="mix-out-volume">0.20</span> <span class="text-sm muted mono font-normal">mL</span></div>
+          </div>
+          <div class="panel-2 p-3">
+            <div class="text-xs muted mono uppercase tracking-wider mb-1">Concentration</div>
+            <div class="result-medium"><span id="mix-out-conc">2500</span> <span class="text-sm muted mono font-normal">mcg/mL</span></div>
+          </div>
+          <div class="panel-2 p-3">
+            <div class="text-xs muted mono uppercase tracking-wider mb-1">Doses / vial</div>
+            <div class="result-medium"><span id="mix-out-doses">10</span></div>
+          </div>
+        </div>
+
+        <div id="mix-error" class="mt-4 p-3 rounded-lg text-sm hidden" style="background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); color: #fca5a5;"></div>
+      </div>
+    </div>
+
+    <details class="panel p-5 mt-6 cursor-pointer">
+      <summary class="font-semibold text-sm select-none">Show the math</summary>
+      <div class="mt-4 text-sm muted space-y-2 mono" id="mix-math"></div>
+    </details>
+  </section>
+
+  <!-- CTA -->
+  <div id="cta" class="panel p-8 mt-10 text-center" style="background: linear-gradient(135deg, rgba(52,211,153,0.05), transparent 70%); border-color: rgba(52,211,153,0.2);">
+    <div class="text-xs mono uppercase tracking-widest mb-3" style="color: var(--accent);">Coming soon</div>
+    <h3 class="text-2xl font-bold mb-2" style="color: #fafafa;">Track your whole protocol in LogMyStack</h3>
+    <p class="max-w-lg mx-auto mb-5" style="color: #a3a3a3;">Stack builder, dose reminders, outcome tracking, and shareable protocol cards — free beta for early users.</p>
+    <form id="waitlist-form" class="flex flex-col sm:flex-row gap-2 max-w-md mx-auto" onsubmit="handleWaitlist(event)">
+      <input type="email" placeholder="you@email.com" required class="input-field flex-1" style="font-family: 'Inter', sans-serif; font-size: 14px;">
+      <button type="submit" class="btn-primary whitespace-nowrap">Get early access</button>
+    </form>
+    <div id="waitlist-success" class="text-sm accent-text mt-3 hidden">You're on the list. We'll be in touch.</div>
+  </div>
+
+  <footer class="mt-16 pt-6 border-t text-xs muted" style="border-color: var(--border);">
+    <div class="flex flex-col md:flex-row justify-between gap-3">
+      <div>© 2026 LogMyStack · For research and informational purposes only · Not medical advice · Peptides referenced are not FDA-approved for human use</div>
+      <div class="flex gap-4">
+        <a href="#" class="hover:text-white">Privacy</a>
+        <a href="#" class="hover:text-white">Terms</a>
+        <a href="#" class="hover:text-white">Contact</a>
+      </div>
+    </div>
+  </footer>
+</main>
+
+<script>
+  // Preset data — (vial) is mg in the vial, (bac) is mL of BAC water, (dose) is per-injection dose
+  const presets = {
+    custom:      { vial: 5,  bac: 2, dose: 500,  unit: 'mcg', units: 20, note: '' },
+    bpc157:      { vial: 5,  bac: 2, dose: 500,  unit: 'mcg', units: 20, note: '' },
+    tb500:       { vial: 5,  bac: 2, dose: 2000, unit: 'mcg', units: 80, note: '' },
+    semaglutide: { vial: 5,  bac: 2, dose: 0.5,  unit: 'mg',  units: 20, note: 'Preset assumes a 0.5 mg starting dose. Common escalation: 0.25 → 0.5 → 1.0 → 1.7 → 2.4 mg weekly.' },
+    tirzepatide: { vial: 10, bac: 2, dose: 2.5,  unit: 'mg',  units: 50, note: 'Preset uses the 2.5 mg starter dose with 2 mL water (gives 50 units per dose, 4 doses per vial). If you\'re dosing 5, 7.5, 10, 12.5, or 15 mg, update the dose field — the units will recalculate.' },
+    retatrutide: { vial: 10, bac: 2, dose: 4,    unit: 'mg',  units: 80, note: 'Preset assumes a 4 mg dose. Typical range: 2–12 mg weekly.' },
+    ipamorelin:  { vial: 5,  bac: 2, dose: 300,  unit: 'mcg', units: 12, note: '' },
+    cjc1295:     { vial: 5,  bac: 2, dose: 300,  unit: 'mcg', units: 12, note: '' },
+    ghkcu:       { vial: 50, bac: 5, dose: 2000, unit: 'mcg', units: 20, note: '' },
+  };
+
+  let drawUnit = 'mcg';
+  let mixUnit = 'mcg';
+  let currentMode = 'draw';
+
+  // --- Mode switching ---
+  function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-tab').forEach(el => el.classList.toggle('active', el.dataset.mode === mode));
+    document.querySelectorAll('.mode-section').forEach(el => el.classList.toggle('active', el.id === 'mode-' + mode));
+  }
+
+  // --- Preset loading ---
+  function loadPreset(key) {
+    const p = presets[key];
+    if (!p) return;
+    document.getElementById('draw-vial-mg').value = p.vial;
+    document.getElementById('draw-bac-ml').value = p.bac;
+    document.getElementById('draw-dose').value = p.dose;
+    setDrawUnit(p.unit);
+
+    document.getElementById('mix-vial-mg').value = p.vial;
+    document.getElementById('mix-dose').value = p.dose;
+    document.getElementById('mix-units').value = p.units;
+    setMixUnit(p.unit);
+
+    document.querySelectorAll('.preset-pill').forEach(el => {
+      el.classList.toggle('active', el.dataset.preset === key);
+    });
+
+    // Per-preset contextual note
+    const noteEl = document.getElementById('preset-note');
+    if (p.note) {
+      noteEl.textContent = p.note;
+      noteEl.classList.remove('hidden');
+    } else {
+      noteEl.classList.add('hidden');
+    }
+
+    calculateDraw();
+    calculateMix();
+  }
+
+  // --- Unit toggles ---
+  function setDrawUnit(unit) {
+    drawUnit = unit;
+    document.querySelectorAll('[data-draw-unit]').forEach(el => {
+      el.classList.toggle('active', el.dataset.drawUnit === unit);
+    });
+    calculateDraw();
+  }
+  function setMixUnit(unit) {
+    mixUnit = unit;
+    document.querySelectorAll('[data-mix-unit]').forEach(el => {
+      el.classList.toggle('active', el.dataset.mixUnit === unit);
+    });
+    calculateMix();
+  }
+
+  // --- DRAW MODE calculation ---
+  function calculateDraw() {
+    const vialMg = parseFloat(document.getElementById('draw-vial-mg').value);
+    const bacMl = parseFloat(document.getElementById('draw-bac-ml').value);
+    const dose = parseFloat(document.getElementById('draw-dose').value);
+    const errEl = document.getElementById('draw-error');
+    errEl.classList.add('hidden');
+
+    if (!vialMg || !bacMl || !dose || vialMg <= 0 || bacMl <= 0 || dose <= 0) {
+      setDrawResults('—', '—', '—', '—', 0);
+      return;
+    }
+    const doseMcg = drawUnit === 'mg' ? dose * 1000 : dose;
+    const vialMcg = vialMg * 1000;
+
+    if (doseMcg > vialMcg) {
+      errEl.classList.remove('hidden');
+      errEl.innerHTML = '<strong>Heads up:</strong> Your target dose (' + dose + ' ' + drawUnit + ') is larger than the entire vial (' + vialMg + ' mg). Double-check your numbers.';
+      setDrawResults('—', '—', '—', '—', 0);
+      return;
+    }
+
+    const concMcgPerMl = vialMcg / bacMl;
+    const volumeMl = doseMcg / concMcgPerMl;
+    const units = volumeMl * 100;
+    const dosesPerVial = Math.floor(vialMcg / doseMcg);
+
+    if (units > 100) {
+      errEl.classList.remove('hidden');
+      errEl.innerHTML = '<strong>One syringe won\'t fit:</strong> This dose needs ' + units.toFixed(1) + ' units. A standard U-100 insulin syringe holds 100 units. Either use less BAC water next time, or split into multiple injections.';
+    }
+
+    setDrawResults(
+      units.toFixed(units < 10 ? 2 : 1),
+      volumeMl.toFixed(3),
+      concMcgPerMl.toFixed(0),
+      dosesPerVial,
+      units
+    );
+
+    document.getElementById('draw-math').innerHTML =
+      '<div>1. Vial: <span class="accent-text">' + vialMg + ' mg</span> = <span class="accent-text">' + vialMcg + ' mcg</span></div>' +
+      '<div>2. Mixed with: <span class="accent-text">' + bacMl + ' mL</span> BAC water</div>' +
+      '<div>3. Concentration: ' + vialMcg + ' ÷ ' + bacMl + ' = <span class="accent-text">' + concMcgPerMl.toFixed(0) + ' mcg/mL</span></div>' +
+      '<div>4. Target dose: ' + dose + ' ' + drawUnit + ' = <span class="accent-text">' + doseMcg + ' mcg</span></div>' +
+      '<div>5. Volume needed: ' + doseMcg + ' ÷ ' + concMcgPerMl.toFixed(0) + ' = <span class="accent-text">' + volumeMl.toFixed(3) + ' mL</span></div>' +
+      '<div>6. Units on U-100: ' + volumeMl.toFixed(3) + ' × 100 = <span class="accent-text">' + units.toFixed(1) + ' units</span></div>' +
+      '<div>7. Doses per vial: floor(' + vialMcg + ' ÷ ' + doseMcg + ') = <span class="accent-text">' + dosesPerVial + '</span></div>';
+  }
+
+  function setDrawResults(units, volume, conc, doses, fillUnits) {
+    document.getElementById('draw-out-units').textContent = units;
+    document.getElementById('draw-out-volume').textContent = volume;
+    document.getElementById('draw-out-conc').textContent = conc;
+    document.getElementById('draw-out-doses').textContent = doses;
+    const fill = Math.min(Math.max(fillUnits, 0), 100);
+    document.getElementById('draw-syringe-fill').style.width = fill + '%';
+  }
+
+  // --- MIX MODE calculation ---
+  function calculateMix() {
+    const vialMg = parseFloat(document.getElementById('mix-vial-mg').value);
+    const dose = parseFloat(document.getElementById('mix-dose').value);
+    const units = parseFloat(document.getElementById('mix-units').value);
+    const errEl = document.getElementById('mix-error');
+    errEl.classList.add('hidden');
+
+    if (!vialMg || !dose || !units || vialMg <= 0 || dose <= 0 || units <= 0) {
+      setMixResults('—', '—', '—', '—');
+      return;
+    }
+    const doseMcg = mixUnit === 'mg' ? dose * 1000 : dose;
+    const vialMcg = vialMg * 1000;
+
+    if (doseMcg > vialMcg) {
+      errEl.classList.remove('hidden');
+      errEl.innerHTML = '<strong>Heads up:</strong> Target dose (' + dose + ' ' + mixUnit + ') is larger than the entire vial (' + vialMg + ' mg).';
+      setMixResults('—', '—', '—', '—');
+      return;
+    }
+    if (units > 100) {
+      errEl.classList.remove('hidden');
+      errEl.innerHTML = '<strong>Syringe won\'t fit:</strong> U-100 syringes max out at 100 units per draw. Lower your target units.';
+      setMixResults('—', '—', '—', '—');
+      return;
+    }
+
+    // User wants: doseMcg per (units/100) mL
+    // Concentration needed = doseMcg / (units/100)
+    // Water to add = vialMcg / concentration
+    const volumeMl = units / 100;
+    const concMcgPerMl = doseMcg / volumeMl;
+    const waterMl = vialMcg / concMcgPerMl;
+    const dosesPerVial = Math.floor(vialMcg / doseMcg);
+
+    if (waterMl > 10) {
+      errEl.classList.remove('hidden');
+      errEl.innerHTML = '<strong>That\'s a lot of water:</strong> ' + waterMl.toFixed(1) + ' mL is more than most vials hold. Consider fewer units per dose (more concentrated).';
+    } else if (waterMl < 0.5) {
+      errEl.classList.remove('hidden');
+      errEl.innerHTML = '<strong>Very concentrated:</strong> Only ' + waterMl.toFixed(2) + ' mL of water. Hard to measure accurately. Consider more units per dose (less concentrated).';
+    }
+
+    setMixResults(
+      waterMl.toFixed(2),
+      volumeMl.toFixed(3),
+      concMcgPerMl.toFixed(0),
+      dosesPerVial
+    );
+
+    document.getElementById('mix-math').innerHTML =
+      '<div>1. Vial: <span class="accent-text">' + vialMg + ' mg</span> = <span class="accent-text">' + vialMcg + ' mcg</span></div>' +
+      '<div>2. Target dose: ' + dose + ' ' + mixUnit + ' = <span class="accent-text">' + doseMcg + ' mcg</span></div>' +
+      '<div>3. Target draw volume: ' + units + ' units ÷ 100 = <span class="accent-text">' + volumeMl.toFixed(3) + ' mL</span></div>' +
+      '<div>4. Concentration needed: ' + doseMcg + ' ÷ ' + volumeMl.toFixed(3) + ' = <span class="accent-text">' + concMcgPerMl.toFixed(0) + ' mcg/mL</span></div>' +
+      '<div>5. Water to add: ' + vialMcg + ' ÷ ' + concMcgPerMl.toFixed(0) + ' = <span class="accent-text">' + waterMl.toFixed(2) + ' mL</span></div>' +
+      '<div>6. Doses per vial: floor(' + vialMcg + ' ÷ ' + doseMcg + ') = <span class="accent-text">' + dosesPerVial + '</span></div>';
+  }
+
+  function setMixResults(water, volume, conc, doses) {
+    document.getElementById('mix-out-water').textContent = water;
+    document.getElementById('mix-out-volume').textContent = volume;
+    document.getElementById('mix-out-conc').textContent = conc;
+    document.getElementById('mix-out-doses').textContent = doses;
+  }
+
+  function handleWaitlist(e) {
+    e.preventDefault();
+    document.getElementById('waitlist-form').classList.add('hidden');
+    document.getElementById('waitlist-success').classList.remove('hidden');
+  }
+
+  // Wire up event listeners
+  document.querySelectorAll('.mode-tab').forEach(el => {
+    el.addEventListener('click', () => setMode(el.dataset.mode));
+  });
+  document.querySelectorAll('.preset-pill').forEach(el => {
+    el.addEventListener('click', () => loadPreset(el.dataset.preset));
+  });
+  document.querySelectorAll('[data-draw-unit]').forEach(el => {
+    el.addEventListener('click', () => setDrawUnit(el.dataset.drawUnit));
+  });
+  document.querySelectorAll('[data-mix-unit]').forEach(el => {
+    el.addEventListener('click', () => setMixUnit(el.dataset.mixUnit));
+  });
+  ['draw-vial-mg', 'draw-bac-ml', 'draw-dose'].forEach(id => {
+    document.getElementById(id).addEventListener('input', calculateDraw);
+  });
+  ['mix-vial-mg', 'mix-dose', 'mix-units'].forEach(id => {
+    document.getElementById(id).addEventListener('input', calculateMix);
+  });
+
+  // Initial
+  calculateDraw();
+  calculateMix();
+</script>
+
+</body>
+</html>
