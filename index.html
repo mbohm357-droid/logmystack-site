@@ -275,11 +275,30 @@
 </main>
 
 <script>
-  function handleWaitlist(e) {
+  // Wired to Kit form https://app.kit.com/forms/9336501
+  async function handleWaitlist(e) {
     e.preventDefault();
-    // TODO: wire to real email service (ConvertKit, Buttondown, Resend, or a Google Form)
+    const form = e.target;
+    const button = form.querySelector('button[type="submit"]');
     const email = document.getElementById('waitlist-email').value;
-    console.log('Waitlist signup:', email);
+
+    button.disabled = true;
+    button.textContent = 'Sending...';
+
+    try {
+      const formData = new FormData();
+      formData.append('email_address', email);
+      await fetch('https://app.kit.com/forms/9336501/subscriptions', {
+        method: 'POST',
+        mode: 'no-cors',
+        body: formData
+      });
+    } catch (err) {
+      console.error('Waitlist error:', err);
+    }
+
+    // Show success (no-cors returns an opaque response; Kit still records the subscriber)
+    form.style.display = 'none';
     document.getElementById('waitlist-success').classList.remove('hidden');
     document.getElementById('waitlist-email').value = '';
   }
