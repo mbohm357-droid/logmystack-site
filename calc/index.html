@@ -316,6 +316,7 @@
           </div>
         </div>
 
+        <div id="draw-warn" class="mt-4 p-3 rounded-lg text-sm hidden" style="background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); color: #fcd34d;"></div>
         <div id="draw-error" class="mt-4 p-3 rounded-lg text-sm hidden" style="background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); color: #fca5a5;"></div>
       </div>
     </div>
@@ -403,6 +404,7 @@
           </div>
         </div>
 
+       <div id="mix-warn" class="mt-4 p-3 rounded-lg text-sm hidden" style="background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); color: #fcd34d;"></div>
         <div id="mix-error" class="mt-4 p-3 rounded-lg text-sm hidden" style="background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); color: #fca5a5;"></div>
       </div>
     </div>
@@ -450,7 +452,54 @@
     cjc1295:     { vial: 5,  bac: 2, dose: 300,  unit: 'mcg', units: 12, note: '' },
     ghkcu:       { vial: 50, bac: 5, dose: 2000, unit: 'mcg', units: 20, note: '' },
   };
+// Community-reported dose ranges, all in mcg.
+  // These are aggregated from common protocols, NOT medical guidance.
+  // Used only for sanity-checking user input (catches unit-confusion errors).
+  const doseRanges = {
+    bpc157:      { lowMcg: 200,  highMcg: 500,   name: 'BPC-157',     display: '200–500 mcg per dose, 1–2× daily' },
+    tb500:       { lowMcg: 2000, highMcg: 5000,  name: 'TB-500',      display: '2–5 mg weekly' },
+    semaglutide: { lowMcg: 250,  highMcg: 2400,  name: 'Semaglutide', display: '0.25–2.4 mg weekly' },
+    tirzepatide: { lowMcg: 2500, highMcg: 15000, name: 'Tirzepatide', display: '2.5–15 mg weekly' },
+    retatrutide: { lowMcg: 2000, highMcg: 12000, name: 'Retatrutide', display: '2–12 mg weekly' },
+    ipamorelin:  { lowMcg: 100,  highMcg: 400,   name: 'Ipamorelin',  display: '100–400 mcg per dose' },
+    cjc1295:     { lowMcg: 100,  highMcg: 400,   name: 'CJC-1295',    display: '100–400 mcg per dose' },
+    ghkcu:       { lowMcg: 1000, highMcg: 3000,  name: 'GHK-Cu',      display: '1–3 mg per injection' },
+  };
 
+  // Tracks which preset pill is currently selected.
+  let currentPreset = 'bpc157';
+
+  // Returns a warning message string if the dose is suspiciously high or low
+  // for the selected peptide — otherwise returns null.
+  function checkDoseSanity(dose, unit, peptideKey) {
+    if (!peptideKey || peptideKey === 'custom') return null;
+    const range = doseRanges[peptideKey];
+    if (!range || !dose || dose <= 0) return null;
+
+    const doseMcg = unit === 'mg' ? dose * 1000 : dose;
+    const otherUnit = unit === 'mg' ? 'mcg' : 'mg';
+    const otherMcg = unit === 'mg' ? dose : dose * 1000;
+    const otherInRange = otherMcg >= range.lowMcg && otherMcg <= range.highMcg;
+
+    // Dose is ≥10× the typical max → likely error
+    if (doseMcg >= range.highMcg * 10) {
+      const multiplier = Math.round(doseMcg / range.highMcg);
+      const hint = otherInRange
+        ? `Did you mean <strong>${dose} ${otherUnit}</strong>?`
+        : `Typical range: ${range.display}.`;
+      return `<strong>Heads up:</strong> ${dose} ${unit} is ~${multiplier}× the typical ${range.name} dose. ${hint}`;
+    }
+
+    // Dose is ≤1/10 of the typical min → likely error
+    if (doseMcg <= range.lowMcg / 10) {
+      const hint = otherInRange
+        ? `Did you mean <strong>${dose} ${otherUnit}</strong>?`
+        : `Typical range: ${range.display}.`;
+      return `<strong>Heads up:</strong> ${dose} ${unit} is well below the typical ${range.name} dose. ${hint}`;
+    }
+
+    return null;
+  }
   let drawUnit = 'mcg';
   let mixUnit = 'mcg';
   let currentMode = 'draw';
@@ -466,6 +515,7 @@
   function loadPreset(key) {
     const p = presets[key];
     if (!p) return;
+    currentPreset = key;
     document.getElementById('draw-vial-mg').value = p.vial;
     document.getElementById('draw-bac-ml').value = p.bac;
     document.getElementById('draw-dose').value = p.dose;
@@ -557,6 +607,16 @@
       '<div>5. Volume needed: ' + doseMcg + ' ÷ ' + concMcgPerMl.toFixed(0) + ' = <span class="accent-text">' + volumeMl.toFixed(3) + ' mL</span></div>' +
       '<div>6. Units on U-100: ' + volumeMl.toFixed(3) + ' × 100 = <span class="accent-text">' + units.toFixed(1) + ' units</span></div>' +
       '<div>7. Doses per vial: floor(' + vialMcg + ' ÷ ' + doseMcg + ') = <span class="accent-text">' + dosesPerVial + '</span></div>';
+
+    // Sanity check: warn if dose looks like a unit-confusion error
+    const warnEl = document.getElementById('draw-warn');
+    const warning = checkDoseSanity(dose, drawUnit, currentPreset);
+    if (warning) {
+      warnEl.innerHTML = warning;
+      warnEl.classList.remove('hidden');
+    } else {
+      warnEl.classList.add('hidden');
+    }
   }
 
   function setDrawResults(units, volume, conc, doses, fillUnits) {
@@ -626,6 +686,16 @@
       '<div>4. Concentration needed: ' + doseMcg + ' ÷ ' + volumeMl.toFixed(3) + ' = <span class="accent-text">' + concMcgPerMl.toFixed(0) + ' mcg/mL</span></div>' +
       '<div>5. Water to add: ' + vialMcg + ' ÷ ' + concMcgPerMl.toFixed(0) + ' = <span class="accent-text">' + waterMl.toFixed(2) + ' mL</span></div>' +
       '<div>6. Doses per vial: floor(' + vialMcg + ' ÷ ' + doseMcg + ') = <span class="accent-text">' + dosesPerVial + '</span></div>';
+
+    // Sanity check: warn if dose looks like a unit-confusion error
+    const warnEl = document.getElementById('mix-warn');
+    const warning = checkDoseSanity(dose, mixUnit, currentPreset);
+    if (warning) {
+      warnEl.innerHTML = warning;
+      warnEl.classList.remove('hidden');
+    } else {
+      warnEl.classList.add('hidden');
+    }
   }
 
   function setMixResults(water, volume, conc, doses) {
