@@ -556,9 +556,9 @@
     thymosina1:    { display: 'Thymosin Alpha-1',          category: 'Healing & Recovery', vial: 5,  bac: 2, dose: 1600, unit: 'mcg', units: 64, note: '' },
 
     // GLP-1s / Metabolic
-    semaglutide:   { display: 'Semaglutide',               category: 'GLP-1s / Metabolic', vial: 5,  bac: 2, dose: 0.5,  unit: 'mg',  units: 20, note: 'Common escalation: 0.25 → 0.5 → 1.0 → 1.7 → 2.4 mg weekly.' },
-    tirzepatide:   { display: 'Tirzepatide',               category: 'GLP-1s / Metabolic', vial: 10, bac: 2, dose: 2.5,  unit: 'mg',  units: 50, note: 'Common escalation: 2.5 → 5 → 7.5 → 10 → 12.5 → 15 mg weekly.' },
-    retatrutide:   { display: 'Retatrutide',               category: 'GLP-1s / Metabolic', vial: 10, bac: 2, dose: 4,    unit: 'mg',  units: 80, note: 'Typical range: 2–12 mg weekly.' },
+    semaglutide:   { display: 'Semaglutide',               category: 'GLP-1s / Metabolic', vial: 5,  bac: 2, dose: 0.5,  unit: 'mg',  units: 20, note: '' },
+    tirzepatide:   { display: 'Tirzepatide',               category: 'GLP-1s / Metabolic', vial: 10, bac: 2, dose: 2.5,  unit: 'mg',  units: 50, note: '' },
+    retatrutide:   { display: 'Retatrutide',               category: 'GLP-1s / Metabolic', vial: 10, bac: 2, dose: 4,    unit: 'mg',  units: 80, note: '' },
     cagrilintide:  { display: 'Cagrilintide',              category: 'GLP-1s / Metabolic', vial: 10, bac: 2, dose: 2.4,  unit: 'mg',  units: 48, note: '' },
     aod9604:       { display: 'AOD-9604',                  category: 'GLP-1s / Metabolic', vial: 5,  bac: 2, dose: 300,  unit: 'mcg', units: 12, note: '' },
     motsc:         { display: 'MOTS-c',                    category: 'GLP-1s / Metabolic', vial: 10, bac: 2, dose: 10,   unit: 'mg',  units: 20, note: '' },
@@ -576,8 +576,8 @@
     igf1lr3:       { display: 'IGF-1 LR3',                 category: 'GH Secretagogues',   vial: 1,  bac: 2, dose: 40,   unit: 'mcg', units: 8,  note: '' },
 
     // Cognitive / Nootropic
-    semax:         { display: 'Semax',                     category: 'Cognitive / Nootropic', vial: 10, bac: 2, dose: 300,  unit: 'mcg', units: 6,  note: 'Often used intranasally — for injection flows, standard subq math applies.' },
-    selank:        { display: 'Selank',                    category: 'Cognitive / Nootropic', vial: 10, bac: 2, dose: 300,  unit: 'mcg', units: 6,  note: 'Often used intranasally — for injection flows, standard subq math applies.' },
+    semax:         { display: 'Semax',                     category: 'Cognitive / Nootropic', vial: 10, bac: 2, dose: 300,  unit: 'mcg', units: 6,  note: '' },
+    selank:        { display: 'Selank',                    category: 'Cognitive / Nootropic', vial: 10, bac: 2, dose: 300,  unit: 'mcg', units: 6,  note: '' },
     dihexa:        { display: 'Dihexa',                    category: 'Cognitive / Nootropic', vial: 10, bac: 2, dose: 10,   unit: 'mg',  units: 20, note: '' },
     cerebrolysin:  { display: 'Cerebrolysin',              category: 'Cognitive / Nootropic', vial: 5,  bac: 2, dose: 5,    unit: 'mg',  units: 20, note: '' },
 
@@ -636,33 +636,53 @@
   // Tracks which preset pill is currently selected.
   let currentPreset = 'bpc157';
 
-  // Returns a warning message string if the dose is suspiciously high or low
-  // for the selected peptide — otherwise returns null.
-  function checkDoseSanity(dose, unit, peptideKey) {
-    if (!peptideKey || peptideKey === 'custom') return null;
-    const range = doseRanges[peptideKey];
-    if (!range || !dose || dose <= 0) return null;
+  // Returns a warning message if the dose + vial math implies an unusual situation —
+  // typically a mg↔mcg unit mix-up. Pure math: no reference to "typical" peptide doses.
+  // `vialMg` = vial contents in mg; `waterMl` = BAC water volume (may be null in mix mode).
+  function checkDoseSanity(dose, unit, vialMg, waterMl) {
+    if (!dose || dose <= 0 || !vialMg || vialMg <= 0) return null;
 
     const doseMcg = unit === 'mg' ? dose * 1000 : dose;
+    const vialMcg = vialMg * 1000;
     const otherUnit = unit === 'mg' ? 'mcg' : 'mg';
     const otherMcg = unit === 'mg' ? dose : dose * 1000;
-    const otherInRange = otherMcg >= range.lowMcg && otherMcg <= range.highMcg;
 
-    // Dose is ≥10× the typical max → likely error
-    if (doseMcg >= range.highMcg * 10) {
-      const multiplier = Math.round(doseMcg / range.highMcg);
-      const hint = otherInRange
-        ? `Did you mean <strong>${dose} ${otherUnit}</strong>?`
-        : `Typical range: ${range.display}.`;
-      return `<strong>Heads up:</strong> ${dose} ${unit} is ~${multiplier}× the typical ${range.name} dose. ${hint}`;
+    // Check 1: dose exceeds the entire vial — physically impossible as a single injection.
+    if (doseMcg > vialMcg) {
+      const swapFits = otherMcg > 0 && otherMcg <= vialMcg;
+      const hint = swapFits
+        ? `<strong>${dose} ${otherUnit}</strong> would fit the vial — did you mean that?`
+        : `Your vial only contains ${vialMg} mg (${vialMcg} mcg) total.`;
+      return `<strong>Heads up:</strong> ${dose} ${unit} = ${doseMcg.toLocaleString()} mcg, which is more than the entire vial. ${hint}`;
     }
 
-    // Dose is ≤1/10 of the typical min → likely error
-    if (doseMcg <= range.lowMcg / 10) {
-      const hint = otherInRange
-        ? `Did you mean <strong>${dose} ${otherUnit}</strong>?`
-        : `Typical range: ${range.display}.`;
-      return `<strong>Heads up:</strong> ${dose} ${unit} is well below the typical ${range.name} dose. ${hint}`;
+    // Check 2: dose is ≥50% of the vial — one or two doses would empty it, which is unusual for a per-injection dose.
+    if (doseMcg >= vialMcg * 0.5) {
+      const dosesPerVial = vialMcg / doseMcg;
+      const swapFits = otherMcg > 0 && otherMcg <= vialMcg * 0.2;
+      if (swapFits) {
+        return `<strong>Heads up:</strong> ${dose} ${unit} = ${doseMcg.toLocaleString()} mcg, which uses the vial in only ${dosesPerVial.toFixed(1)} dose${dosesPerVial < 2 ? '' : 's'}. <strong>${dose} ${otherUnit}</strong> would give you many more doses — did you mean that?`;
+      }
+    }
+
+    // Check 3: dose is extremely small relative to vial — >1000 doses per vial implies a mg→mcg mix-up.
+    if (doseMcg > 0 && vialMcg / doseMcg > 1000) {
+      const dosesPerVial = Math.floor(vialMcg / doseMcg);
+      const swapFits = otherMcg > 0 && otherMcg <= vialMcg && vialMcg / otherMcg <= 100;
+      const hint = swapFits
+        ? `<strong>${dose} ${otherUnit}</strong> would give a more typical number of doses — did you mean that?`
+        : `Double-check your units.`;
+      return `<strong>Heads up:</strong> ${dose} ${unit} = ${doseMcg.toLocaleString()} mcg, which would give ~${dosesPerVial.toLocaleString()} doses per vial. ${hint}`;
+    }
+
+    // Check 4 (DRAW mode only — runs when waterMl is provided):
+    // if the calculated draw volume exceeds the full vial's water, the syringe can't physically hold it.
+    if (waterMl && waterMl > 0) {
+      const concMcgPerMl = vialMcg / waterMl;
+      const drawVolumeMl = doseMcg / concMcgPerMl;
+      if (drawVolumeMl > waterMl) {
+        return `<strong>Heads up:</strong> Drawing ${dose} ${unit} at this concentration would require ${drawVolumeMl.toFixed(2)} mL — more than the ${waterMl} mL of water in the vial. Double-check your dose or units.`;
+      }
     }
 
     return null;
@@ -775,7 +795,7 @@
 
     // Sanity check: warn if dose looks like a unit-confusion error
     const warnEl = document.getElementById('draw-warn');
-    const warning = checkDoseSanity(dose, drawUnit, currentPreset);
+    const warning = checkDoseSanity(dose, drawUnit, vialMg, bacMl);
     if (warning) {
       warnEl.innerHTML = warning;
       warnEl.classList.remove('hidden');
@@ -854,7 +874,7 @@
 
     // Sanity check: warn if dose looks like a unit-confusion error
     const warnEl = document.getElementById('mix-warn');
-    const warning = checkDoseSanity(dose, mixUnit, currentPreset);
+    const warning = checkDoseSanity(dose, mixUnit, vialMg, null);
     if (warning) {
       warnEl.innerHTML = warning;
       warnEl.classList.remove('hidden');
