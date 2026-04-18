@@ -180,37 +180,7 @@
     color: var(--muted);
     text-align: center;
   }
-  /* Dose range reference card */
-  .range-card {
-    background: linear-gradient(180deg, rgba(52,211,153,0.05), transparent 80%);
-    border: 1px solid var(--border);
-    border-left: 2px solid var(--accent);
-    border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 24px;
-    display: none;
-  }
-  .range-card.visible { display: block; }
-  .range-card-header {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    color: var(--accent);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-    font-weight: 600;
-  }
-  .range-card-body {
-    font-size: 15px;
-    color: var(--text);
-    font-weight: 500;
-    margin-bottom: 6px;
-  }
-  .range-card-footer {
-    font-size: 11px;
-    color: var(--muted);
-    font-style: italic;
-  }
+  
   /* Mode tabs */
   .mode-tab {
     flex: 1;
@@ -362,12 +332,6 @@
     <div id="preset-note" class="text-xs mt-3 hidden" style="color: #a3a3a3;"></div>
   </div>
 
-  <!-- Dose range reference card (appears for known peptides only) -->
-  <div id="range-card" class="range-card">
-    <div class="range-card-header" id="range-card-header">PEPTIDE · TYPICAL DOSE</div>
-    <div class="range-card-body" id="range-card-body">—</div>
-    <div class="range-card-footer">Community-aggregated from common protocols. Not medical advice.</div>
-  </div>
   <!-- ============ DRAW MODE ============ -->
   <section id="mode-draw" class="mode-section active">
     <div class="grid md:grid-cols-2 gap-6">
@@ -672,23 +636,6 @@
   // Tracks which preset pill is currently selected.
   let currentPreset = 'bpc157';
 
-  // Updates the dose-range reference card for the selected peptide.
-  // Hides the card entirely for "custom" or unknown peptides.
-  function updateRangeCard(peptideKey) {
-    const card = document.getElementById('range-card');
-    const header = document.getElementById('range-card-header');
-    const body = document.getElementById('range-card-body');
-
-    if (!peptideKey || peptideKey === 'custom' || !doseRanges[peptideKey]) {
-      card.classList.remove('visible');
-      return;
-    }
-
-    const range = doseRanges[peptideKey];
-    header.textContent = range.name + ' · TYPICAL DOSE';
-    body.textContent = range.display;
-    card.classList.add('visible');
-  }
   // Returns a warning message string if the dose is suspiciously high or low
   // for the selected peptide — otherwise returns null.
   function checkDoseSanity(dose, unit, peptideKey) {
@@ -736,7 +683,6 @@
     const p = presets[key];
     if (!p) return;
     currentPreset = key;
-    updateRangeCard(key);
     document.getElementById('draw-vial-mg').value = p.vial;
     document.getElementById('draw-bac-ml').value = p.bac;
     document.getElementById('draw-dose').value = p.dose;
