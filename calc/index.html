@@ -86,7 +86,100 @@
   }
   .preset-pill:hover { background: #262626; border-color: #3a3a3a; color: white; }
   .preset-pill.active { background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.35); color: var(--accent); }
+/* Searchable peptide picker */
+  .picker {
+    position: relative;
+    max-width: 520px;
+  }
+  .picker-input {
+    width: 100%;
+    background: #0a0a0a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 40px 12px 42px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.15s;
+    cursor: pointer;
+  }
+  .picker-input:focus { outline: none; border-color: rgba(52,211,153,0.5); }
+  .picker-input::placeholder { color: var(--muted-2); }
+  .picker-icon {
+    position: absolute;
+    left: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .picker-clear {
+    position: absolute;
+    right: 10px; top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 18px;
+    line-height: 1;
+    display: none;
+  }
+  .picker-clear:hover { color: var(--text); }
+  .picker-clear.visible { display: block; }
 
+  .picker-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0; right: 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    max-height: 360px;
+    overflow-y: auto;
+    z-index: 50;
+    display: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+  .picker-dropdown.open { display: block; }
+  .picker-category {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted-2);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 10px 14px 6px;
+    border-top: 1px solid var(--border);
+  }
+  .picker-category:first-child { border-top: none; }
+  .picker-option {
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    transition: background 0.1s;
+  }
+  .picker-option:hover, .picker-option.highlighted {
+    background: rgba(52,211,153,0.08);
+  }
+  .picker-option-name {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .picker-option-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .picker-empty {
+    padding: 16px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+  }
   /* Mode tabs */
   .mode-tab {
     flex: 1;
@@ -214,19 +307,17 @@
     </button>
   </div>
 
-  <!-- Presets -->
+  <!-- Peptide picker -->
   <div class="mb-6">
-    <div class="text-xs muted mono uppercase tracking-widest mb-3">Quick start</div>
-    <div class="flex flex-wrap gap-2">
-      <button class="preset-pill" data-preset="custom">Custom</button>
-      <button class="preset-pill active" data-preset="bpc157">BPC-157</button>
-      <button class="preset-pill" data-preset="tb500">TB-500</button>
-      <button class="preset-pill" data-preset="semaglutide">Semaglutide</button>
-      <button class="preset-pill" data-preset="tirzepatide">Tirzepatide</button>
-      <button class="preset-pill" data-preset="retatrutide">Retatrutide</button>
-      <button class="preset-pill" data-preset="ipamorelin">Ipamorelin</button>
-      <button class="preset-pill" data-preset="cjc1295">CJC-1295</button>
-      <button class="preset-pill" data-preset="ghkcu">GHK-Cu</button>
+    <div class="text-xs muted mono uppercase tracking-widest mb-3">Peptide</div>
+    <div class="picker" id="peptide-picker">
+      <svg class="picker-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="m21 21-4.3-4.3"></path>
+      </svg>
+      <input type="text" id="picker-input" class="picker-input" placeholder="Search peptides — e.g. BPC-157, tirzepatide, semax…" autocomplete="off">
+      <button type="button" id="picker-clear" class="picker-clear" aria-label="Clear">×</button>
+      <div id="picker-dropdown" class="picker-dropdown"></div>
     </div>
     <div id="preset-note" class="text-xs mt-3 hidden" style="color: #a3a3a3;"></div>
   </div>
@@ -440,30 +531,96 @@
 </main>
 
 <script>
-  // Preset data — (vial) is mg in the vial, (bac) is mL of BAC water, (dose) is per-injection dose
+  // Preset data.
+  // vial = mg in the vial; bac = mL BAC water default; dose = per-injection dose; unit = mcg|mg; units = desired units on syringe; note = contextual note; display = user-facing name; category = grouping.
   const presets = {
-    custom:      { vial: 5,  bac: 2, dose: 500,  unit: 'mcg', units: 20, note: '' },
-    bpc157:      { vial: 5,  bac: 2, dose: 500,  unit: 'mcg', units: 20, note: '' },
-    tb500:       { vial: 5,  bac: 2, dose: 2000, unit: 'mcg', units: 80, note: '' },
-    semaglutide: { vial: 5,  bac: 2, dose: 0.5,  unit: 'mg',  units: 20, note: 'Preset assumes a 0.5 mg starting dose. Common escalation: 0.25 → 0.5 → 1.0 → 1.7 → 2.4 mg weekly.' },
-    tirzepatide: { vial: 10, bac: 2, dose: 2.5,  unit: 'mg',  units: 50, note: 'Preset uses the 2.5 mg starter dose with 2 mL water (gives 50 units per dose, 4 doses per vial). If you\'re dosing 5, 7.5, 10, 12.5, or 15 mg, update the dose field — the units will recalculate.' },
-    retatrutide: { vial: 10, bac: 2, dose: 4,    unit: 'mg',  units: 80, note: 'Preset assumes a 4 mg dose. Typical range: 2–12 mg weekly.' },
-    ipamorelin:  { vial: 5,  bac: 2, dose: 300,  unit: 'mcg', units: 12, note: '' },
-    cjc1295:     { vial: 5,  bac: 2, dose: 300,  unit: 'mcg', units: 12, note: '' },
-    ghkcu:       { vial: 50, bac: 5, dose: 2000, unit: 'mcg', units: 20, note: '' },
+    custom:        { display: 'Custom / not listed',      category: null,              vial: 5,  bac: 2, dose: 500,  unit: 'mcg', units: 20, note: '' },
+
+    // Healing & Recovery
+    bpc157:        { display: 'BPC-157',                   category: 'Healing & Recovery', vial: 5,  bac: 2, dose: 500,  unit: 'mcg', units: 20, note: '' },
+    tb500:         { display: 'TB-500',                    category: 'Healing & Recovery', vial: 5,  bac: 2, dose: 2000, unit: 'mcg', units: 80, note: '' },
+    kpv:           { display: 'KPV',                       category: 'Healing & Recovery', vial: 5,  bac: 2, dose: 500,  unit: 'mcg', units: 20, note: '' },
+    ghkcu:         { display: 'GHK-Cu',                    category: 'Healing & Recovery', vial: 50, bac: 5, dose: 2000, unit: 'mcg', units: 20, note: '' },
+    ss31:          { display: 'SS-31 (Elamipretide)',      category: 'Healing & Recovery', vial: 10, bac: 2, dose: 5,    unit: 'mg',  units: 20, note: '' },
+    larazotide:    { display: 'Larazotide',                category: 'Healing & Recovery', vial: 5,  bac: 2, dose: 500,  unit: 'mcg', units: 20, note: '' },
+    thymosina1:    { display: 'Thymosin Alpha-1',          category: 'Healing & Recovery', vial: 5,  bac: 2, dose: 1600, unit: 'mcg', units: 64, note: '' },
+
+    // GLP-1s / Metabolic
+    semaglutide:   { display: 'Semaglutide',               category: 'GLP-1s / Metabolic', vial: 5,  bac: 2, dose: 0.5,  unit: 'mg',  units: 20, note: 'Common escalation: 0.25 → 0.5 → 1.0 → 1.7 → 2.4 mg weekly.' },
+    tirzepatide:   { display: 'Tirzepatide',               category: 'GLP-1s / Metabolic', vial: 10, bac: 2, dose: 2.5,  unit: 'mg',  units: 50, note: 'Common escalation: 2.5 → 5 → 7.5 → 10 → 12.5 → 15 mg weekly.' },
+    retatrutide:   { display: 'Retatrutide',               category: 'GLP-1s / Metabolic', vial: 10, bac: 2, dose: 4,    unit: 'mg',  units: 80, note: 'Typical range: 2–12 mg weekly.' },
+    cagrilintide:  { display: 'Cagrilintide',              category: 'GLP-1s / Metabolic', vial: 10, bac: 2, dose: 2.4,  unit: 'mg',  units: 48, note: '' },
+    aod9604:       { display: 'AOD-9604',                  category: 'GLP-1s / Metabolic', vial: 5,  bac: 2, dose: 300,  unit: 'mcg', units: 12, note: '' },
+    motsc:         { display: 'MOTS-c',                    category: 'GLP-1s / Metabolic', vial: 10, bac: 2, dose: 10,   unit: 'mg',  units: 20, note: '' },
+    amino1mq:      { display: '5-Amino-1MQ',               category: 'GLP-1s / Metabolic', vial: 50, bac: 2, dose: 50,   unit: 'mg',  units: 20, note: '' },
+    tesofensine:   { display: 'Tesofensine',               category: 'GLP-1s / Metabolic', vial: 10, bac: 2, dose: 500,  unit: 'mcg', units: 10, note: '' },
+
+    // GH Secretagogues
+    ipamorelin:    { display: 'Ipamorelin',                category: 'GH Secretagogues',   vial: 5,  bac: 2, dose: 300,  unit: 'mcg', units: 12, note: '' },
+    cjc1295:       { display: 'CJC-1295',                  category: 'GH Secretagogues',   vial: 5,  bac: 2, dose: 300,  unit: 'mcg', units: 12, note: '' },
+    sermorelin:    { display: 'Sermorelin',                category: 'GH Secretagogues',   vial: 5,  bac: 2, dose: 300,  unit: 'mcg', units: 12, note: '' },
+    tesamorelin:   { display: 'Tesamorelin',               category: 'GH Secretagogues',   vial: 10, bac: 2, dose: 2,    unit: 'mg',  units: 40, note: '' },
+    hexarelin:     { display: 'Hexarelin',                 category: 'GH Secretagogues',   vial: 5,  bac: 2, dose: 200,  unit: 'mcg', units: 8,  note: '' },
+    ghrp2:         { display: 'GHRP-2',                    category: 'GH Secretagogues',   vial: 5,  bac: 2, dose: 200,  unit: 'mcg', units: 8,  note: '' },
+    ghrp6:         { display: 'GHRP-6',                    category: 'GH Secretagogues',   vial: 5,  bac: 2, dose: 200,  unit: 'mcg', units: 8,  note: '' },
+    igf1lr3:       { display: 'IGF-1 LR3',                 category: 'GH Secretagogues',   vial: 1,  bac: 2, dose: 40,   unit: 'mcg', units: 8,  note: '' },
+
+    // Cognitive / Nootropic
+    semax:         { display: 'Semax',                     category: 'Cognitive / Nootropic', vial: 10, bac: 2, dose: 300,  unit: 'mcg', units: 6,  note: 'Often used intranasally — for injection flows, standard subq math applies.' },
+    selank:        { display: 'Selank',                    category: 'Cognitive / Nootropic', vial: 10, bac: 2, dose: 300,  unit: 'mcg', units: 6,  note: 'Often used intranasally — for injection flows, standard subq math applies.' },
+    dihexa:        { display: 'Dihexa',                    category: 'Cognitive / Nootropic', vial: 10, bac: 2, dose: 10,   unit: 'mg',  units: 20, note: '' },
+    cerebrolysin:  { display: 'Cerebrolysin',              category: 'Cognitive / Nootropic', vial: 5,  bac: 2, dose: 5,    unit: 'mg',  units: 20, note: '' },
+
+    // Longevity
+    epitalon:      { display: 'Epitalon',                  category: 'Longevity',            vial: 10, bac: 2, dose: 10,   unit: 'mg',  units: 20, note: '' },
+    nadplus:       { display: 'NAD+',                      category: 'Longevity',            vial: 500,bac: 5, dose: 100,  unit: 'mg',  units: 20, note: '' },
+    foxo4dri:      { display: 'FOXO4-DRI',                 category: 'Longevity',            vial: 5,  bac: 2, dose: 5,    unit: 'mg',  units: 20, note: '' },
+
+    // Sexual Health
+    pt141:         { display: 'PT-141 (Bremelanotide)',    category: 'Sexual Health',        vial: 10, bac: 2, dose: 1.75, unit: 'mg',  units: 35, note: '' },
+    melanotan2:    { display: 'Melanotan II',              category: 'Sexual Health',        vial: 10, bac: 2, dose: 500,  unit: 'mcg', units: 10, note: '' },
   };
 // Community-reported dose ranges, all in mcg.
   // These are aggregated from common protocols, NOT medical guidance.
   // Used only for sanity-checking user input (catches unit-confusion errors).
   const doseRanges = {
-    bpc157:      { lowMcg: 200,  highMcg: 500,   name: 'BPC-157',     display: '200–500 mcg per dose, 1–2× daily' },
-    tb500:       { lowMcg: 2000, highMcg: 5000,  name: 'TB-500',      display: '2–5 mg weekly' },
-    semaglutide: { lowMcg: 250,  highMcg: 2400,  name: 'Semaglutide', display: '0.25–2.4 mg weekly' },
-    tirzepatide: { lowMcg: 2500, highMcg: 15000, name: 'Tirzepatide', display: '2.5–15 mg weekly' },
-    retatrutide: { lowMcg: 2000, highMcg: 12000, name: 'Retatrutide', display: '2–12 mg weekly' },
-    ipamorelin:  { lowMcg: 100,  highMcg: 400,   name: 'Ipamorelin',  display: '100–400 mcg per dose' },
-    cjc1295:     { lowMcg: 100,  highMcg: 400,   name: 'CJC-1295',    display: '100–400 mcg per dose' },
-    ghkcu:       { lowMcg: 1000, highMcg: 3000,  name: 'GHK-Cu',      display: '1–3 mg per injection' },
+    bpc157:        { lowMcg: 200,   highMcg: 500,    name: 'BPC-157',          display: '200–500 mcg per dose, 1–2× daily' },
+    tb500:         { lowMcg: 2000,  highMcg: 5000,   name: 'TB-500',           display: '2–5 mg weekly' },
+    kpv:           { lowMcg: 250,   highMcg: 1000,   name: 'KPV',              display: '250 mcg – 1 mg per dose' },
+    ghkcu:         { lowMcg: 1000,  highMcg: 3000,   name: 'GHK-Cu',           display: '1–3 mg per injection' },
+    ss31:          { lowMcg: 1000,  highMcg: 10000,  name: 'SS-31',            display: '1–10 mg per dose' },
+    larazotide:    { lowMcg: 250,   highMcg: 1000,   name: 'Larazotide',       display: '250 mcg – 1 mg per dose' },
+    thymosina1:    { lowMcg: 800,   highMcg: 3200,   name: 'Thymosin Alpha-1', display: '0.8–3.2 mg per dose' },
+
+    semaglutide:   { lowMcg: 250,   highMcg: 2400,   name: 'Semaglutide',      display: '0.25–2.4 mg weekly' },
+    tirzepatide:   { lowMcg: 2500,  highMcg: 15000,  name: 'Tirzepatide',      display: '2.5–15 mg weekly' },
+    retatrutide:   { lowMcg: 2000,  highMcg: 12000,  name: 'Retatrutide',      display: '2–12 mg weekly' },
+    cagrilintide:  { lowMcg: 300,   highMcg: 4500,   name: 'Cagrilintide',     display: '0.3–4.5 mg weekly' },
+    aod9604:       { lowMcg: 250,   highMcg: 600,    name: 'AOD-9604',         display: '250–600 mcg per dose' },
+    motsc:         { lowMcg: 5000,  highMcg: 15000,  name: 'MOTS-c',           display: '5–15 mg per dose' },
+    amino1mq:      { lowMcg: 25000, highMcg: 150000, name: '5-Amino-1MQ',      display: '25–150 mg daily' },
+    tesofensine:   { lowMcg: 250,   highMcg: 1000,   name: 'Tesofensine',      display: '0.25–1 mg daily' },
+
+    ipamorelin:    { lowMcg: 100,   highMcg: 400,    name: 'Ipamorelin',       display: '100–400 mcg per dose' },
+    cjc1295:       { lowMcg: 100,   highMcg: 400,    name: 'CJC-1295',         display: '100–400 mcg per dose' },
+    sermorelin:    { lowMcg: 100,   highMcg: 500,    name: 'Sermorelin',       display: '100–500 mcg per dose' },
+    tesamorelin:   { lowMcg: 1000,  highMcg: 2000,   name: 'Tesamorelin',      display: '1–2 mg daily' },
+    hexarelin:     { lowMcg: 100,   highMcg: 400,    name: 'Hexarelin',        display: '100–400 mcg per dose' },
+    ghrp2:         { lowMcg: 100,   highMcg: 400,    name: 'GHRP-2',           display: '100–400 mcg per dose' },
+    ghrp6:         { lowMcg: 100,   highMcg: 400,    name: 'GHRP-6',           display: '100–400 mcg per dose' },
+    igf1lr3:       { lowMcg: 20,    highMcg: 80,     name: 'IGF-1 LR3',        display: '20–80 mcg per dose' },
+
+    semax:         { lowMcg: 200,   highMcg: 1000,   name: 'Semax',            display: '200 mcg – 1 mg per dose' },
+    selank:        { lowMcg: 200,   highMcg: 1000,   name: 'Selank',           display: '200 mcg – 1 mg per dose' },
+    dihexa:        { lowMcg: 8000,  highMcg: 25000,  name: 'Dihexa',           display: '8–25 mg per dose' },
+    cerebrolysin:  { lowMcg: 2000,  highMcg: 10000,  name: 'Cerebrolysin',     display: '2–10 mg per dose' },
+
+    epitalon:      { lowMcg: 5000,  highMcg: 15000,  name: 'Epitalon',         display: '5–15 mg per dose' },
+    nadplus:       { lowMcg: 50000, highMcg: 300000, name: 'NAD+',             display: '50–300 mg per dose' },
+    foxo4dri:      { lowMcg: 2000,  highMcg: 10000,  name: 'FOXO4-DRI',        display: '2–10 mg per dose' },
+
+    pt141:         { lowMcg: 1000,  highMcg: 2000,   name: 'PT-141',           display: '1–2 mg per dose' },
+    melanotan2:    { lowMcg: 250,   highMcg: 1000,   name: 'Melanotan II',     display: '0.25–1 mg per dose' },
   };
 
   // Tracks which preset pill is currently selected.
@@ -526,9 +683,7 @@
     document.getElementById('mix-units').value = p.units;
     setMixUnit(p.unit);
 
-    document.querySelectorAll('.preset-pill').forEach(el => {
-      el.classList.toggle('active', el.dataset.preset === key);
-    });
+  
 
     // Per-preset contextual note
     const noteEl = document.getElementById('preset-note');
@@ -715,8 +870,136 @@
   document.querySelectorAll('.mode-tab').forEach(el => {
     el.addEventListener('click', () => setMode(el.dataset.mode));
   });
-  document.querySelectorAll('.preset-pill').forEach(el => {
-    el.addEventListener('click', () => loadPreset(el.dataset.preset));
+  // ========== Peptide picker (searchable dropdown) ==========
+  const pickerInput = document.getElementById('picker-input');
+  const pickerDropdown = document.getElementById('picker-dropdown');
+  const pickerClear = document.getElementById('picker-clear');
+  let pickerHighlightIdx = -1;
+  let pickerVisibleKeys = [];
+
+  function renderPickerOptions(filter) {
+    const q = (filter || '').trim().toLowerCase();
+    const keys = Object.keys(presets).filter(k => {
+      if (!q) return true;
+      const p = presets[k];
+      return p.display.toLowerCase().includes(q) || k.toLowerCase().includes(q);
+    });
+
+    if (keys.length === 0) {
+      pickerDropdown.innerHTML = '<div class="picker-empty">No peptides match — try "Custom" for anything not listed.</div>';
+      pickerVisibleKeys = [];
+      return;
+    }
+
+    // Group by category; "custom" (category: null) pinned to top.
+    const grouped = {};
+    const order = [];
+    keys.forEach(k => {
+      const cat = presets[k].category || 'Custom';
+      if (!grouped[cat]) { grouped[cat] = []; order.push(cat); }
+      grouped[cat].push(k);
+    });
+    // Put "Custom" first regardless of where it appeared.
+    order.sort((a, b) => (a === 'Custom' ? -1 : b === 'Custom' ? 1 : 0));
+
+    let html = '';
+    let idx = 0;
+    pickerVisibleKeys = [];
+    order.forEach(cat => {
+      html += '<div class="picker-category">' + cat + '</div>';
+      grouped[cat].forEach(k => {
+        const p = presets[k];
+        const meta = k === 'custom' ? '' : (p.vial + ' mg · ' + p.dose + ' ' + p.unit);
+        html += '<div class="picker-option" data-key="' + k + '" data-idx="' + idx + '">' +
+                  '<span class="picker-option-name">' + p.display + '</span>' +
+                  '<span class="picker-option-meta">' + meta + '</span>' +
+                '</div>';
+        pickerVisibleKeys.push(k);
+        idx++;
+      });
+    });
+
+    pickerDropdown.innerHTML = html;
+
+    // Click handlers on each option
+    pickerDropdown.querySelectorAll('.picker-option').forEach(el => {
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // prevent blur before click registers
+        selectPickerKey(el.dataset.key);
+      });
+      el.addEventListener('mouseenter', () => {
+        pickerHighlightIdx = parseInt(el.dataset.idx);
+        updatePickerHighlight();
+      });
+    });
+  }
+
+  function updatePickerHighlight() {
+    pickerDropdown.querySelectorAll('.picker-option').forEach(el => {
+      el.classList.toggle('highlighted', parseInt(el.dataset.idx) === pickerHighlightIdx);
+    });
+  }
+
+  function openPicker() {
+    renderPickerOptions(pickerInput.value);
+    pickerDropdown.classList.add('open');
+    pickerHighlightIdx = -1;
+  }
+  function closePicker() {
+    pickerDropdown.classList.remove('open');
+  }
+
+  function selectPickerKey(key) {
+    const p = presets[key];
+    if (!p) return;
+    pickerInput.value = p.display;
+    pickerClear.classList.add('visible');
+    closePicker();
+    loadPreset(key);
+  }
+
+  pickerInput.addEventListener('focus', openPicker);
+  pickerInput.addEventListener('click', openPicker);
+  pickerInput.addEventListener('input', () => {
+    pickerClear.classList.toggle('visible', pickerInput.value.length > 0);
+    renderPickerOptions(pickerInput.value);
+    pickerDropdown.classList.add('open');
+  });
+  pickerInput.addEventListener('blur', () => {
+    // Delay so clicks on dropdown options can register first
+    setTimeout(closePicker, 150);
+  });
+  pickerInput.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      pickerHighlightIdx = Math.min(pickerHighlightIdx + 1, pickerVisibleKeys.length - 1);
+      updatePickerHighlight();
+      // Scroll highlighted option into view
+      const el = pickerDropdown.querySelector('.picker-option.highlighted');
+      if (el) el.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      pickerHighlightIdx = Math.max(pickerHighlightIdx - 1, 0);
+      updatePickerHighlight();
+      const el = pickerDropdown.querySelector('.picker-option.highlighted');
+      if (el) el.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (pickerHighlightIdx >= 0 && pickerVisibleKeys[pickerHighlightIdx]) {
+        selectPickerKey(pickerVisibleKeys[pickerHighlightIdx]);
+      }
+    } else if (e.key === 'Escape') {
+      closePicker();
+      pickerInput.blur();
+    }
+  });
+
+  pickerClear.addEventListener('click', () => {
+    pickerInput.value = '';
+    pickerClear.classList.remove('visible');
+    pickerInput.focus();
+    renderPickerOptions('');
+    pickerDropdown.classList.add('open');
   });
   document.querySelectorAll('[data-draw-unit]').forEach(el => {
     el.addEventListener('click', () => setDrawUnit(el.dataset.drawUnit));
@@ -731,9 +1014,8 @@
     document.getElementById(id).addEventListener('input', calculateMix);
   });
 
-  // Initial
-  calculateDraw();
-  calculateMix();
+  // Initial: default to BPC-157 on load
+  selectPickerKey('bpc157');
 </script>
 
 </body>
