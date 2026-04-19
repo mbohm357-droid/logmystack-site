@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — LogMyStack</title>
+<meta name="description" content="How LogMyStack collects, uses, and protects your information.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="robots" content="index, follow">
+<!-- PostHog analytics -->
+<script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="Ir init Br Zr Ci jr $r Lr capture calculateEventProperties Yr register register_once register_for_session unregister unregister_for_session Jr getFeatureFlag getFeatureFlagPayload getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync Kr identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty Wr zr createPersonProfile setInternalOrTestUser Xr Or en opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing Vr debug ki Gr getPageViewId captureTraceFeedback captureTraceMetric Nr".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_tmnhC5RHsDEjoAviVNiWE7Y8dcQY5JM5QNsnZgxc7fRB', {
+        api_host: 'https://us.i.posthog.com',
+        defaults: '2026-01-30',
+        person_profiles: 'identified_only',
+    })
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0a0a;
+    --panel: #111111;
+    --border: #262626;
+    --text: #fafafa;
+    --muted: #a3a3a3;
+    --muted-2: #737373;
+    --accent: #34d399;
+  }
+  * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; box-sizing: border-box; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  html, body {
+    background-color: #0a0a0a !important;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .muted { color: var(--muted); }
+  .muted-2 { color: var(--muted-2); }
+  .accent-text { color: var(--accent); }
+  .btn-secondary {
+    background: #1a1a1a;
+    color: #e5e5e5;
+    border: 1px solid var(--border);
+    font-weight: 500;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover { background: #222; border-color: #3a3a3a; }
+
+  .prose h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #fafafa;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.015em;
+  }
+  .prose h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e5e5e5;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .prose p {
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    font-size: 15px;
+  }
+  .prose ul {
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+    font-size: 15px;
+  }
+  .prose li { margin-bottom: 0.4rem; }
+  .prose li::marker { color: var(--accent); }
+  .prose a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-color: rgba(52,211,153,0.35);
+    text-underline-offset: 3px;
+  }
+  .prose a:hover { text-decoration-color: var(--accent); }
+  .prose strong { color: #fafafa; font-weight: 600; }
+  .prose code {
+    font-family: 'JetBrains Mono', monospace;
+    background: #161616;
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .callout {
+    background: rgba(52,211,153,0.05);
+    border: 1px solid rgba(52,211,153,0.2);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 1.5rem 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  .callout strong { color: #fafafa; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="border-b" style="border-color: var(--border);">
+  <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2" style="text-decoration: none; color: inherit;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2 L22 8 L22 16 L12 22 L2 16 L2 8 Z" stroke="#34d399" stroke-width="1.5"/>
+        <path d="M12 8 L17 11 L17 13 L12 16 L7 13 L7 11 Z" fill="#34d399"/>
+      </svg>
+      <span class="text-base font-bold tracking-tight">LogMyStack</span>
+    </a>
+    <div class="flex items-center gap-3">
+      <a href="/calc" class="text-sm muted hover:text-white" style="text-decoration: none;">Calculator</a>
+      <a href="/#waitlist" class="btn-secondary">Get early access</a>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-3xl mx-auto px-6 py-12 md:py-16">
+
+  <div class="text-xs mono uppercase tracking-widest accent-text mb-3">Legal</div>
+  <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4" style="letter-spacing: -0.03em;">Privacy Policy</h1>
+  <p class="muted-2 text-sm mb-10">Last updated: April 17, 2026 · Effective date: April 17, 2026</p>
+
+  <div class="prose">
+
+    <p>
+      This Privacy Policy explains how LogMyStack ("LogMyStack," "we," "us") collects, uses, and protects information when you visit <a href="https://logmystack.com">logmystack.com</a>, use the free Peptide Reconstitution Calculator, or join our waitlist. We've tried to write this in plain English. If anything is unclear, email us at <a href="mailto:hello@logmystack.com">hello@logmystack.com</a>.
+    </p>
+
+    <div class="callout">
+      <strong>The short version:</strong> We collect an email address if you ask to join our waitlist, and we collect anonymized usage data so we can see which parts of the site work and which don't. We don't sell your data. The calculator runs in your browser and doesn't send your inputs anywhere. You can ask us to delete your information any time.
+    </div>
+
+    <h2>1. Information We Collect</h2>
+
+    <h3>Information you give us</h3>
+    <ul>
+      <li><strong>Waitlist email address.</strong> If you submit the "Get early access" form, we collect the email address you enter. We use Kit (formerly ConvertKit) to manage our waitlist and send email.</li>
+      <li><strong>Email correspondence.</strong> If you email us at <code>hello@logmystack.com</code> or reply to a LogMyStack email, we receive and retain your message and email address.</li>
+    </ul>
+
+    <h3>Information collected automatically</h3>
+    <ul>
+      <li><strong>Usage analytics.</strong> We use PostHog to understand how visitors use the site. This includes pages visited, buttons clicked, approximate device type, browser, screen size, referring website, and approximate geographic location (derived from IP address — we do not store raw IP addresses for long).</li>
+      <li><strong>Session recordings and heatmaps.</strong> PostHog captures anonymized recordings of site sessions (cursor movement, clicks, scrolling) and aggregates them into heatmaps. Recordings automatically mask text in input fields by default, including any email address you type into the waitlist form.</li>
+      <li><strong>Web performance data.</strong> We collect page load times and basic performance metrics to monitor site health.</li>
+      <li><strong>Cookies and similar technologies.</strong> PostHog sets a first-party cookie to recognize returning visits. See Section 5 for details.</li>
+    </ul>
+
+    <h3>Information we do NOT collect</h3>
+    <ul>
+      <li><strong>Calculator inputs.</strong> The Peptide Reconstitution Calculator at <a href="/calc">logmystack.com/calc</a> runs entirely in your browser. The vial size, water volume, target dose, and any other values you enter are never transmitted to our servers or to any third party.</li>
+      <li><strong>Health or medical records.</strong> LogMyStack does not currently offer user accounts and does not store any health information, diagnosis, medication history, lab results, or protocol logs. If and when we launch user accounts that store this information, we will update this Policy and notify subscribers before enabling that collection.</li>
+      <li><strong>Payment information.</strong> LogMyStack is free and does not process payments.</li>
+    </ul>
+
+    <h2>2. How We Use Information</h2>
+    <ul>
+      <li>To contact you about early access if you joined the waitlist.</li>
+      <li>To send occasional product updates to people who have joined the waitlist. You can unsubscribe from any email with one click.</li>
+      <li>To understand how the site is used so we can improve it.</li>
+      <li>To detect abuse, spam submissions, and technical problems.</li>
+      <li>To comply with legal obligations.</li>
+    </ul>
+
+    <p>
+      We do not use your information to build advertising profiles, and we do not run advertising on the site.
+    </p>
+
+    <h2>3. How We Share Information</h2>
+
+    <p>We do not sell your personal information. We share limited information only with the service providers we use to operate the site:</p>
+
+    <ul>
+      <li><strong>Kit (ConvertKit)</strong> — hosts our waitlist and sends our email. Receives: email address, subscription timestamp. <a href="https://kit.com/privacy">Kit privacy policy</a>.</li>
+      <li><strong>PostHog</strong> — hosts our analytics and session replay. Receives: anonymized usage data as described above. Data is stored in PostHog's US region. <a href="https://posthog.com/privacy">PostHog privacy policy</a>.</li>
+      <li><strong>Vercel</strong> — hosts the website. Receives: standard server logs (IP, user agent, requested URL) retained for a short period for security and performance. <a href="https://vercel.com/legal/privacy-policy">Vercel privacy policy</a>.</li>
+      <li><strong>Google Workspace</strong> — provides email service for our <code>@logmystack.com</code> addresses. Handles email we send and receive. <a href="https://workspace.google.com/terms/dpa_terms.html">Google Workspace terms</a>.</li>
+    </ul>
+
+    <p>
+      We may also disclose information if we are required to by law (subpoena, court order) or to protect the safety, rights, or property of LogMyStack, our users, or the public. If LogMyStack is acquired, your information may be transferred to the acquiring entity, subject to this Policy or a successor policy with equivalent protections.
+    </p>
+
+    <h2>4. Data Retention</h2>
+    <ul>
+      <li><strong>Waitlist email addresses</strong> are retained until you unsubscribe or ask us to delete them, whichever comes first.</li>
+      <li><strong>Analytics data</strong> is retained according to PostHog's default retention (currently 7 years for events, 30 days for session recordings). We may shorten these periods in the future.</li>
+      <li><strong>Server logs</strong> are retained by Vercel for a short rolling window (typically 30 days or less).</li>
+      <li><strong>Email correspondence</strong> is retained as long as it's useful for product support, then deleted.</li>
+    </ul>
+
+    <h2>5. Cookies and Tracking</h2>
+
+    <p>LogMyStack uses only the following cookies and storage:</p>
+    <ul>
+      <li><code>ph_*</code> (PostHog) — a first-party cookie used to distinguish new vs. returning visits and to associate events from the same session. No third-party advertising cookies are set.</li>
+    </ul>
+
+    <p>
+      You can disable cookies in your browser settings or use a privacy tool like uBlock Origin to block analytics entirely. The site will continue to work normally if you do. The calculator does not require any cookies or local storage to function.
+    </p>
+
+    <h2>6. Your Rights</h2>
+
+    <p>Regardless of where you live, you may:</p>
+    <ul>
+      <li>Ask what information we have about you.</li>
+      <li>Ask us to correct inaccurate information.</li>
+      <li>Ask us to delete your information.</li>
+      <li>Unsubscribe from emails at any time (one-click link at the bottom of every email, or email us directly).</li>
+    </ul>
+
+    <h3>Residents of California (CCPA / CPRA)</h3>
+    <p>
+      California residents have the right to know what personal information we collect, to request deletion, to correct inaccurate information, to opt out of the "sale" or "sharing" of personal information, and to be free from discrimination for exercising these rights. We do not sell or share personal information as those terms are defined under California law. To exercise any of these rights, email <a href="mailto:hello@logmystack.com">hello@logmystack.com</a>.
+    </p>
+
+    <h3>Residents of the EU/UK (GDPR)</h3>
+    <p>
+      LogMyStack does not actively market to the EU or UK, but if you are a resident of those regions and have submitted information to us, you have the right to access, correct, delete, restrict, port, and object to processing of your personal data under the GDPR. You also have the right to lodge a complaint with a supervisory authority. The legal basis for our processing is your consent (for the waitlist) and our legitimate interest in understanding site usage (for analytics).
+    </p>
+
+    <h3>How to make a request</h3>
+    <p>
+      Email <a href="mailto:hello@logmystack.com">hello@logmystack.com</a> from the address associated with your request. We will respond within 30 days. We may ask for additional information to verify your identity before fulfilling a deletion request.
+    </p>
+
+    <h2>7. Security</h2>
+    <p>
+      We rely on industry-standard security practices from our service providers (TLS in transit, at-rest encryption, access controls). No system is perfectly secure, and we cannot guarantee that information will never be accessed by an unauthorized party. If a breach affects your information, we will notify you as required by law.
+    </p>
+
+    <h2>8. Children's Privacy</h2>
+    <p>
+      LogMyStack is not intended for anyone under the age of 18. We do not knowingly collect information from children. If you believe a child has provided information to us, email <a href="mailto:hello@logmystack.com">hello@logmystack.com</a> and we will delete it.
+    </p>
+
+    <h2>9. Do Not Track</h2>
+    <p>
+      Some browsers transmit a "Do Not Track" signal. There is no universal standard for how sites should respond to this signal, and LogMyStack does not currently change behavior based on it. You can disable analytics by using a content-blocking extension.
+    </p>
+
+    <h2>10. International Users</h2>
+    <p>
+      LogMyStack is operated from the United States, and information we collect is processed and stored in the United States. If you access the site from outside the US, your information will be transferred to, stored, and processed in the US, where privacy laws may differ from those of your country.
+    </p>
+
+    <h2>11. Changes to This Policy</h2>
+    <p>
+      We may update this Policy from time to time. When we do, we'll change the "Last updated" date at the top. If the changes are material — for example, if we begin collecting health data or change how we share information — we will notify subscribers by email before the changes take effect.
+    </p>
+
+    <h2>12. Contact</h2>
+    <p>
+      Questions, requests, or complaints can be sent to <a href="mailto:hello@logmystack.com">hello@logmystack.com</a>. We read every message.
+    </p>
+
+    <div class="callout" style="margin-top: 3rem;">
+      <strong>A note on the product:</strong> LogMyStack's website and calculator are provided for research and informational purposes only. Nothing on this site is medical advice. Peptides referenced in the calculator are not FDA-approved for human use. Consult a qualified physician before starting any protocol. See our <a href="/terms">Terms of Service</a> for more.
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="pt-12 pb-10 border-t text-sm muted mt-16" style="border-color: var(--border);">
+    <div class="flex flex-col md:flex-row justify-between gap-6">
+      <div class="flex items-center gap-2">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2 L22 8 L22 16 L12 22 L2 16 L2 8 Z" stroke="#34d399" stroke-width="1.5"/>
+          <path d="M12 8 L17 11 L17 13 L12 16 L7 13 L7 11 Z" fill="#34d399"/>
+        </svg>
+        <span class="font-semibold text-white">LogMyStack</span>
+      </div>
+      <div class="flex gap-5 text-xs">
+        <a href="/calc" class="hover:text-white" style="text-decoration: none;">Calculator</a>
+        <a href="/#waitlist" class="hover:text-white" style="text-decoration: none;">Waitlist</a>
+        <a href="/privacy" class="hover:text-white" style="text-decoration: none;">Privacy</a>
+        <a href="/terms" class="hover:text-white" style="text-decoration: none;">Terms</a>
+        <a href="mailto:hello@logmystack.com" class="hover:text-white" style="text-decoration: none;">Contact</a>
+      </div>
+    </div>
+    <div class="mt-6 text-xs leading-relaxed" style="color: var(--muted-2);">
+      © 2026 LogMyStack · For research and informational purposes only · Not medical advice · Peptides referenced are not FDA-approved for human use · Consult a qualified physician before starting any protocol.
+    </div>
+  </footer>
+
+</main>
+
+</body>
+</html>
