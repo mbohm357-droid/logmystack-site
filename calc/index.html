@@ -281,6 +281,77 @@
     border-color: var(--accent);
     color: var(--accent);
   }
+  .btn-save {
+    background: #1a1a1a;
+    color: #d4d4d4;
+    border: 1px solid var(--border);
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.02em;
+    margin-right: 8px;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .btn-save:hover { background: #262626; border-color: #3a3a3a; color: white; }
+  .btn-save.saved {
+    background: rgba(52,211,153,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Saved calcs panel */
+  .saved-panel { display: none; }
+  .saved-panel.visible { display: block; }
+  .saved-item {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    transition: border-color 0.15s;
+  }
+  .saved-item:hover { border-color: #3a3a3a; }
+  .saved-item-main { min-width: 0; flex: 1; }
+  .saved-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .saved-item-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .saved-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .saved-action-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: #d4d4d4;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.02em;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .saved-action-btn:hover { background: #262626; color: white; }
+  .saved-action-btn.delete:hover { background: rgba(248,113,113,0.1); color: #fca5a5; border-color: rgba(248,113,113,0.4); }
   .mode-section { display: none; }
   .mode-section.active { display: block; }
 
@@ -406,7 +477,16 @@
             <span class="w-6 h-6 rounded-full flex items-center justify-center mono text-xs" style="background: rgba(52,211,153,0.1); color: var(--accent);">3</span>
             Draw this much
           </h2>
-          <button type="button" class="btn-share" id="draw-share-btn" aria-label="Copy shareable link">
+          <div class="flex items-center">
+            <button type="button" class="btn-save" id="draw-save-btn" aria-label="Save this calculation">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span>Save</span>
+            </button>
+            <button type="button" class="btn-share" id="draw-share-btn" aria-label="Copy shareable link">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
               <polyline points="16 6 12 2 8 6"></polyline>
@@ -414,6 +494,7 @@
             </svg>
             <span>Share</span>
           </button>
+          </div>
         </div>
 
         <div class="panel-2 p-5 mb-4">
@@ -512,7 +593,16 @@
             <span class="w-6 h-6 rounded-full flex items-center justify-center mono text-xs" style="background: rgba(52,211,153,0.1); color: var(--accent);">3</span>
             Add this much water
           </h2>
-          <button type="button" class="btn-share" id="mix-share-btn" aria-label="Copy shareable link">
+          <div class="flex items-center">
+            <button type="button" class="btn-save" id="mix-save-btn" aria-label="Save this calculation">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span>Save</span>
+            </button>
+            <button type="button" class="btn-share" id="mix-share-btn" aria-label="Copy shareable link">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
               <polyline points="16 6 12 2 8 6"></polyline>
@@ -520,6 +610,7 @@
             </svg>
             <span>Share</span>
           </button>
+          </div>
         </div>
 
         <div class="panel-2 p-5 mb-4">
@@ -556,7 +647,14 @@
       <div class="mt-4 text-sm muted space-y-2 mono" id="mix-math"></div>
     </details>
   </section>
-
+<!-- Saved calcs panel (hidden until at least one save exists) -->
+  <section id="saved-panel" class="saved-panel mt-10">
+    <div class="flex items-center justify-between mb-4">
+      <div class="text-xs muted mono uppercase tracking-widest">Saved calcs</div>
+      <div class="text-xs muted mono" id="saved-count">0 saved</div>
+    </div>
+    <div id="saved-list"></div>
+  </section>
   <!-- CTA -->
   <div id="cta" class="panel p-8 mt-10 text-center" style="background: linear-gradient(135deg, rgba(52,211,153,0.05), transparent 70%); border-color: rgba(52,211,153,0.2);">
     <div class="text-xs mono uppercase tracking-widest mb-3" style="color: var(--accent);">Coming soon</div>
@@ -930,6 +1028,188 @@
     document.getElementById('mix-out-conc').textContent = conc;
     document.getElementById('mix-out-doses').textContent = doses;
   }
+  // ========== Saved protocols (localStorage) ==========
+  const SAVED_STORAGE_KEY = 'logmystack_saved_calcs_v1';
+  const SAVED_MAX = 20;
+
+  function loadSavedCalcs() {
+    try {
+      const raw = localStorage.getItem(SAVED_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.warn('Could not load saved calcs:', e);
+      return [];
+    }
+  }
+
+  function writeSavedCalcs(calcs) {
+    try {
+      localStorage.setItem(SAVED_STORAGE_KEY, JSON.stringify(calcs));
+      return true;
+    } catch (e) {
+      console.warn('Could not write saved calcs:', e);
+      return false;
+    }
+  }
+
+  function getCurrentCalcState() {
+    const state = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      savedAt: Date.now(),
+      mode: currentMode,
+      peptide: (currentPreset && currentPreset !== 'custom') ? currentPreset : null,
+    };
+    if (currentMode === 'draw') {
+      state.vial = document.getElementById('draw-vial-mg').value;
+      state.water = document.getElementById('draw-bac-ml').value;
+      state.dose = document.getElementById('draw-dose').value;
+      state.unit = drawUnit;
+    } else {
+      state.vial = document.getElementById('mix-vial-mg').value;
+      state.dose = document.getElementById('mix-dose').value;
+      state.units = document.getElementById('mix-units').value;
+      state.unit = mixUnit;
+    }
+    return state;
+  }
+
+  function buildMetaLine(calc) {
+    // Human-readable one-liner describing the calc
+    const peptideName = calc.peptide && presets[calc.peptide]
+      ? presets[calc.peptide].display
+      : 'Custom';
+    if (calc.mode === 'draw') {
+      return peptideName + ' · ' + calc.vial + ' mg / ' + calc.water + ' mL · ' + calc.dose + ' ' + calc.unit + ' per dose';
+    } else {
+      return peptideName + ' · mix ' + calc.vial + ' mg vial · target ' + calc.dose + ' ' + calc.unit + ' at ' + calc.units + ' units';
+    }
+  }
+
+  function renderSavedPanel() {
+    const panel = document.getElementById('saved-panel');
+    const list = document.getElementById('saved-list');
+    const count = document.getElementById('saved-count');
+    const calcs = loadSavedCalcs();
+
+    if (calcs.length === 0) {
+      panel.classList.remove('visible');
+      return;
+    }
+
+    panel.classList.add('visible');
+    count.textContent = calcs.length + (calcs.length === 1 ? ' saved' : ' saved');
+
+    // Sort newest first
+    calcs.sort((a, b) => b.savedAt - a.savedAt);
+
+    let html = '';
+    calcs.forEach(calc => {
+      // Escape user-provided names to prevent HTML injection
+      const safeName = (calc.name || 'Untitled')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      html += '<div class="saved-item" data-id="' + calc.id + '">' +
+                '<div class="saved-item-main">' +
+                  '<div class="saved-item-name">' + safeName + '</div>' +
+                  '<div class="saved-item-meta">' + buildMetaLine(calc) + '</div>' +
+                '</div>' +
+                '<div class="saved-item-actions">' +
+                  '<button type="button" class="saved-action-btn" data-action="load" data-id="' + calc.id + '">Load</button>' +
+                  '<button type="button" class="saved-action-btn delete" data-action="delete" data-id="' + calc.id + '">Delete</button>' +
+                '</div>' +
+              '</div>';
+    });
+    list.innerHTML = html;
+
+    // Wire up Load and Delete buttons
+    list.querySelectorAll('[data-action="load"]').forEach(btn => {
+      btn.addEventListener('click', () => loadSavedCalc(btn.dataset.id));
+    });
+    list.querySelectorAll('[data-action="delete"]').forEach(btn => {
+      btn.addEventListener('click', () => deleteSavedCalc(btn.dataset.id));
+    });
+  }
+
+  function handleSaveClick(btnId) {
+    const calcs = loadSavedCalcs();
+    if (calcs.length >= SAVED_MAX) {
+      alert('You have ' + SAVED_MAX + ' saved calcs — the current limit. Delete one before saving another.');
+      return;
+    }
+
+    const rawName = prompt('Name this calculation (e.g. "My BPC vial"):');
+    if (rawName === null) return; // user cancelled
+    const name = rawName.trim().slice(0, 60);
+    if (!name) return;
+
+    const state = getCurrentCalcState();
+    state.name = name;
+    calcs.push(state);
+
+    if (!writeSavedCalcs(calcs)) {
+      alert('Could not save. Your browser may have storage disabled or be full.');
+      return;
+    }
+
+    // Brief "Saved!" feedback on the button
+    const btn = document.getElementById(btnId);
+    const label = btn.querySelector('span');
+    const original = label.textContent;
+    btn.classList.add('saved');
+    label.textContent = 'Saved!';
+    setTimeout(() => {
+      btn.classList.remove('saved');
+      label.textContent = original;
+    }, 1600);
+
+    renderSavedPanel();
+  }
+
+  function loadSavedCalc(id) {
+    const calcs = loadSavedCalcs();
+    const calc = calcs.find(c => c.id === id);
+    if (!calc) return;
+
+    if (calc.peptide && presets[calc.peptide]) {
+      selectPickerKey(calc.peptide);
+    } else {
+      selectPickerKey('custom');
+    }
+
+    setMode(calc.mode === 'mix' ? 'mix' : 'draw');
+
+    if (calc.mode === 'draw') {
+      if (calc.vial) document.getElementById('draw-vial-mg').value = calc.vial;
+      if (calc.water) document.getElementById('draw-bac-ml').value = calc.water;
+      if (calc.dose) document.getElementById('draw-dose').value = calc.dose;
+      if (calc.unit === 'mg' || calc.unit === 'mcg') setDrawUnit(calc.unit);
+      calculateDraw();
+    } else {
+      if (calc.vial) document.getElementById('mix-vial-mg').value = calc.vial;
+      if (calc.dose) document.getElementById('mix-dose').value = calc.dose;
+      if (calc.units) document.getElementById('mix-units').value = calc.units;
+      if (calc.unit === 'mg' || calc.unit === 'mcg') setMixUnit(calc.unit);
+      calculateMix();
+    }
+
+    // Scroll to top of calculator
+    document.querySelector('main').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function deleteSavedCalc(id) {
+    const calcs = loadSavedCalcs();
+    const calc = calcs.find(c => c.id === id);
+    if (!calc) return;
+    if (!confirm('Delete "' + (calc.name || 'Untitled') + '"?')) return;
+
+    const filtered = calcs.filter(c => c.id !== id);
+    writeSavedCalcs(filtered);
+    renderSavedPanel();
+  }
 // ========== Shareable calc links ==========
   // URL format: /calc/?p=bpc157&vial=5&water=2&dose=500&unit=mcg&mode=draw
   // Short param names (p, vial, water, dose, unit, mode) to keep URLs compact.
@@ -1175,10 +1455,14 @@
   });
 document.getElementById('draw-share-btn').addEventListener('click', () => handleShareClick('draw-share-btn'));
   document.getElementById('mix-share-btn').addEventListener('click', () => handleShareClick('mix-share-btn'));
+  document.getElementById('draw-save-btn').addEventListener('click', () => handleSaveClick('draw-save-btn'));
+  document.getElementById('mix-save-btn').addEventListener('click', () => handleSaveClick('mix-save-btn'));
   // Initial: if URL has params, load from them; otherwise default to BPC-157
   if (!loadFromUrl()) {
     selectPickerKey('bpc157');
   }
+  // Render the saved panel (hidden if no saves exist)
+  renderSavedPanel();
 </script>
 
 </body>
