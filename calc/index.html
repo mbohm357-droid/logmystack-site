@@ -259,7 +259,28 @@
   .btn-primary { background: var(--accent); color: #052e1a; font-weight: 600; padding: 12px 22px; border-radius: 10px; font-size: 14px; cursor: pointer; border: none; transition: opacity 0.15s; }
   .btn-primary:hover { opacity: 0.9; }
   .btn-secondary { background: #1a1a1a; color: #e5e5e5; border: 1px solid var(--border); font-weight: 500; padding: 10px 18px; border-radius: 10px; font-size: 13px; cursor: pointer; }
-
+.btn-share {
+    background: #1a1a1a;
+    color: var(--accent);
+    border: 1px solid rgba(52,211,153,0.35);
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.02em;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-share:hover { background: #262626; border-color: rgba(52,211,153,0.6); }
+  .btn-share.copied {
+    background: rgba(52,211,153,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
   .mode-section { display: none; }
   .mode-section.active { display: block; }
 
@@ -380,10 +401,20 @@
       </div>
 
       <div class="panel p-6" style="background: linear-gradient(180deg, rgba(52,211,153,0.04), transparent 40%);">
-        <h2 class="font-semibold mb-5 flex items-center gap-2">
-          <span class="w-6 h-6 rounded-full flex items-center justify-center mono text-xs" style="background: rgba(52,211,153,0.1); color: var(--accent);">3</span>
-          Draw this much
-        </h2>
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="font-semibold flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full flex items-center justify-center mono text-xs" style="background: rgba(52,211,153,0.1); color: var(--accent);">3</span>
+            Draw this much
+          </h2>
+          <button type="button" class="btn-share" id="draw-share-btn" aria-label="Copy shareable link">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+              <polyline points="16 6 12 2 8 6"></polyline>
+              <line x1="12" y1="2" x2="12" y2="15"></line>
+            </svg>
+            <span>Share</span>
+          </button>
+        </div>
 
         <div class="panel-2 p-5 mb-4">
           <div class="text-xs muted mono uppercase tracking-widest mb-2">Insulin syringe (U-100)</div>
@@ -476,10 +507,20 @@
       </div>
 
       <div class="panel p-6" style="background: linear-gradient(180deg, rgba(52,211,153,0.04), transparent 40%);">
-        <h2 class="font-semibold mb-5 flex items-center gap-2">
-          <span class="w-6 h-6 rounded-full flex items-center justify-center mono text-xs" style="background: rgba(52,211,153,0.1); color: var(--accent);">3</span>
-          Add this much water
-        </h2>
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="font-semibold flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full flex items-center justify-center mono text-xs" style="background: rgba(52,211,153,0.1); color: var(--accent);">3</span>
+            Add this much water
+          </h2>
+          <button type="button" class="btn-share" id="mix-share-btn" aria-label="Copy shareable link">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+              <polyline points="16 6 12 2 8 6"></polyline>
+              <line x1="12" y1="2" x2="12" y2="15"></line>
+            </svg>
+            <span>Share</span>
+          </button>
+        </div>
 
         <div class="panel-2 p-5 mb-4">
           <div class="text-xs muted mono uppercase tracking-widest mb-2">Bacteriostatic water to add</div>
@@ -889,7 +930,96 @@
     document.getElementById('mix-out-conc').textContent = conc;
     document.getElementById('mix-out-doses').textContent = doses;
   }
+// ========== Shareable calc links ==========
+  // URL format: /calc/?p=bpc157&vial=5&water=2&dose=500&unit=mcg&mode=draw
+  // Short param names (p, vial, water, dose, unit, mode) to keep URLs compact.
 
+  function buildShareUrl() {
+    const params = new URLSearchParams();
+    params.set('mode', currentMode);
+    if (currentPreset && currentPreset !== 'custom') {
+      params.set('p', currentPreset);
+    }
+    if (currentMode === 'draw') {
+      const vial = document.getElementById('draw-vial-mg').value;
+      const water = document.getElementById('draw-bac-ml').value;
+      const dose = document.getElementById('draw-dose').value;
+      if (vial) params.set('vial', vial);
+      if (water) params.set('water', water);
+      if (dose) params.set('dose', dose);
+      params.set('unit', drawUnit);
+    } else {
+      const vial = document.getElementById('mix-vial-mg').value;
+      const dose = document.getElementById('mix-dose').value;
+      const units = document.getElementById('mix-units').value;
+      if (vial) params.set('vial', vial);
+      if (dose) params.set('dose', dose);
+      if (units) params.set('units', units);
+      params.set('unit', mixUnit);
+    }
+    // Build absolute URL so copied links work when pasted anywhere
+    const baseUrl = window.location.origin + window.location.pathname;
+    return baseUrl + '?' + params.toString();
+  }
+
+  async function handleShareClick(btnId) {
+    const btn = document.getElementById(btnId);
+    const url = buildShareUrl();
+    try {
+      await navigator.clipboard.writeText(url);
+      const label = btn.querySelector('span');
+      const originalText = label.textContent;
+      btn.classList.add('copied');
+      label.textContent = 'Copied!';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        label.textContent = originalText;
+      }, 1800);
+    } catch (err) {
+      // Older browsers / insecure context — fall back to a prompt
+      window.prompt('Copy this link:', url);
+    }
+  }
+
+  // Load calc state from URL params on page load (if any are present)
+  function loadFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.toString() === '') return false;
+
+    const mode = params.get('mode');
+    const peptide = params.get('p');
+    const unit = params.get('unit');
+    const vial = params.get('vial');
+    const water = params.get('water');
+    const dose = params.get('dose');
+    const units = params.get('units');
+
+    // Load peptide preset first (populates defaults, sets currentPreset)
+    if (peptide && presets[peptide]) {
+      selectPickerKey(peptide);
+    } else {
+      selectPickerKey('custom');
+    }
+
+    // Override defaults with URL values for whichever mode we're loading
+    const loadMode = mode === 'mix' ? 'mix' : 'draw';
+    setMode(loadMode);
+
+    if (loadMode === 'draw') {
+      if (vial) document.getElementById('draw-vial-mg').value = vial;
+      if (water) document.getElementById('draw-bac-ml').value = water;
+      if (dose) document.getElementById('draw-dose').value = dose;
+      if (unit === 'mg' || unit === 'mcg') setDrawUnit(unit);
+      calculateDraw();
+    } else {
+      if (vial) document.getElementById('mix-vial-mg').value = vial;
+      if (dose) document.getElementById('mix-dose').value = dose;
+      if (units) document.getElementById('mix-units').value = units;
+      if (unit === 'mg' || unit === 'mcg') setMixUnit(unit);
+      calculateMix();
+    }
+    return true;
+  }
   function handleWaitlist(e) {
     e.preventDefault();
     document.getElementById('waitlist-form').classList.add('hidden');
@@ -1043,9 +1173,12 @@
   ['mix-vial-mg', 'mix-dose', 'mix-units'].forEach(id => {
     document.getElementById(id).addEventListener('input', calculateMix);
   });
-
-  // Initial: default to BPC-157 on load
-  selectPickerKey('bpc157');
+document.getElementById('draw-share-btn').addEventListener('click', () => handleShareClick('draw-share-btn'));
+  document.getElementById('mix-share-btn').addEventListener('click', () => handleShareClick('mix-share-btn'));
+  // Initial: if URL has params, load from them; otherwise default to BPC-157
+  if (!loadFromUrl()) {
+    selectPickerKey('bpc157');
+  }
 </script>
 
 </body>
