@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LogMyStack — Demo</title>
+<meta name="description" content="Preview of LogMyStack — the logbook for peptide users.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="robots" content="noindex">
+<!-- PostHog analytics -->
+<script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="Ir init Br Zr Ci jr $r Lr capture calculateEventProperties Yr register register_once register_for_session unregister unregister_for_session Jr getFeatureFlag getFeatureFlagPayload getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync Kr identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty Wr zr createPersonProfile setInternalOrTestUser Xr Or en opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing Vr debug ki Gr getPageViewId captureTraceFeedback captureTraceMetric Nr".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_tmnhC5RHsDEjoAviVNiWE7Y8dcQY5JM5QNsnZgxc7fRB', {
+        api_host: 'https://us.i.posthog.com',
+        defaults: '2026-01-30',
+        person_profiles: 'identified_only',
+    })
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0a0a;
+    --panel: #111111;
+    --panel-2: #161616;
+    --border: #262626;
+    --border-2: #1f1f1f;
+    --text: #fafafa;
+    --muted: #a3a3a3;
+    --muted-2: #737373;
+    --accent: #34d399;
+    --accent-dim: #0d4a35;
+    --warn: #fbbf24;
+  }
+  * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; box-sizing: border-box; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  html, body {
+    background-color: #0a0a0a !important;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
+  .panel-2 { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; }
+  .muted { color: var(--muted); }
+  .muted-2 { color: var(--muted-2); }
+  .accent-text { color: var(--accent); }
+  .warn-text { color: var(--warn); }
+
+  .tab {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+    border: none;
+  }
+  .tab:hover { color: var(--text); background: #161616; }
+  .tab.active {
+    color: var(--accent);
+    background: rgba(52,211,153,0.08);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #052e1a;
+    font-weight: 600;
+    padding: 9px 16px;
+    border-radius: 9px;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-small {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 7px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-small:hover { background: #1f1f1f; border-color: #333; }
+  .btn-log {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid rgba(52,211,153,0.25);
+    font-weight: 500;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: all 0.15s;
+  }
+  .btn-log:hover { background: rgba(52,211,153,0.08); border-color: var(--accent); }
+
+  .pill-streak {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(52,211,153,0.06);
+    border: 1px solid rgba(52,211,153,0.22);
+    color: var(--accent);
+    padding: 5px 11px 5px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+  .pill-streak-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px rgba(52,211,153,0.7);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10.5px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 2px 9px;
+    border-radius: 5px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--muted);
+  }
+  .badge.healing { color: #93c5fd; border-color: rgba(147,197,253,0.25); background: rgba(147,197,253,0.06); }
+  .badge.glp1 { color: #c4b5fd; border-color: rgba(196,181,253,0.25); background: rgba(196,181,253,0.06); }
+  .badge.gh { color: #fcd34d; border-color: rgba(252,211,77,0.25); background: rgba(252,211,77,0.06); }
+  .badge.warn { color: var(--warn); border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.06); }
+  .badge.due {
+    color: var(--accent);
+    border-color: rgba(52,211,153,0.3);
+    background: rgba(52,211,153,0.06);
+  }
+  .badge.due-time {
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
+  }
+
+  .metric-delta {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(52,211,153,0.08);
+    color: var(--accent);
+  }
+  .metric-delta.down { background: rgba(52,211,153,0.08); color: var(--accent); }
+  .metric-delta.neutral { background: #1a1a1a; color: var(--muted); }
+
+  .dose-week {
+    display: inline-flex;
+    gap: 6px;
+    align-items: flex-end;
+  }
+  .dose-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    min-width: 14px;
+  }
+  .dose-day-label {
+    font-size: 9px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted-2);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1;
+    font-weight: 500;
+  }
+  .dose-day.today .dose-day-label {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .dose-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    display: block;
+    transition: background 0.15s;
+  }
+  .dose-dot.filled { background: var(--accent); }
+  .dose-day.today .dose-dot {
+    box-shadow: 0 0 0 2px rgba(52,211,153,0.3);
+  }
+  .dose-day.today .dose-dot:not(.filled) {
+    background: #0a0a0a;
+    border: 1px solid var(--accent);
+    width: 8px;
+    height: 8px;
+  }
+
+  .progress {
+    height: 3px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #34d399, #6ee7b7);
+    border-radius: 999px;
+  }
+
+  .input-field {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 13px;
+    border-radius: 9px;
+    font-size: 14px;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  .input-field:focus { outline: none; border-color: rgba(52,211,153,0.5); }
+
+  .search-bar {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 8px 14px 8px 36px;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  .search-bar:focus { outline: none; border-color: rgba(52,211,153,0.5); color: var(--text); }
+
+  .avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--accent-dim);
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 12px;
+    border: 1px solid rgba(52,211,153,0.3);
+  }
+
+  .demo-banner {
+    background: linear-gradient(90deg, rgba(52,211,153,0.07), rgba(52,211,153,0.02));
+    border-bottom: 1px solid rgba(52,211,153,0.2);
+    font-size: 12px;
+    color: var(--muted);
+    padding: 8px 24px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.03em;
+  }
+  .demo-banner strong { color: var(--accent); }
+  .demo-banner a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-color: rgba(52,211,153,0.4);
+    text-underline-offset: 2px;
+  }
+
+  .logged-text { text-decoration: line-through; color: var(--muted-2); }
+  .logged-confirm { color: var(--accent); font-size: 11.5px; font-family: 'JetBrains Mono', monospace; }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    padding: 28px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .modal h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 4px; }
+  .modal .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .modal label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 6px; margin-top: 14px; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'JetBrains Mono', monospace; }
+  .modal label:first-of-type { margin-top: 0; }
+  .modal textarea { min-height: 90px; resize: vertical; }
+  .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+
+  select.input-field {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23a3a3a3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  .tab-coming-soon {
+    text-align: center;
+    padding: 80px 32px;
+    color: var(--muted);
+  }
+  .tab-coming-soon h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  .tab-coming-soon p { font-size: 14px; max-width: 420px; margin: 0 auto; line-height: 1.65; }
+
+  .hidden { display: none !important; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--panel);
+    border: 1px solid rgba(52,211,153,0.3);
+    color: var(--text);
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    display: none;
+    align-items: center;
+    gap: 8px;
+    z-index: 200;
+    animation: toastIn 0.2s ease-out;
+  }
+  .toast.show { display: inline-flex; }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Demo banner -->
+<div class="demo-banner">
+  <strong>DEMO MODE</strong> · This is an interactive preview. Nothing is saved. <a href="/#waitlist">Join the waitlist</a> to get the real thing.
+</div>
+
+<!-- Top nav -->
+<header style="border-bottom: 1px solid var(--border); background: #0a0a0a;">
+  <div class="mx-auto px-6 py-3 flex items-center justify-between" style="max-width: 1400px;">
+    <div class="flex items-center gap-8">
+      <a href="/" class="flex items-center gap-2" style="text-decoration: none; color: inherit;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2 L22 8 L22 16 L12 22 L2 16 L2 8 Z" stroke="#34d399" stroke-width="1.5"/>
+          <path d="M12 8 L17 11 L17 13 L12 16 L7 13 L7 11 Z" fill="#34d399"/>
+        </svg>
+        <span class="text-[15px] font-bold tracking-tight">LogMyStack</span>
+      </a>
+      <nav class="flex items-center gap-1">
+        <button class="tab active" data-tab="log">Log</button>
+        <button class="tab" data-tab="compounds">Compounds</button>
+        <button class="tab" data-tab="feed">Feed</button>
+        <button class="tab" data-tab="atlas">Atlas</button>
+      </nav>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="relative hidden md:block" style="width: 320px;">
+        <svg class="absolute top-1/2 -translate-y-1/2 left-3" width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <circle cx="11" cy="11" r="7" stroke="#737373" stroke-width="1.8"/>
+          <path d="M20 20L17 17" stroke="#737373" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <input type="text" placeholder="Search compounds, users, protocols..." class="search-bar" onclick="toast('Search coming in beta')">
+      </div>
+      <button class="btn-primary" onclick="openLogDose()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        Log dose
+      </button>
+      <div class="avatar">MB</div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== LOG TAB ===== -->
+<main id="tab-log" class="mx-auto px-6 py-8" style="max-width: 1400px;">
+
+  <!-- Greeting row -->
+  <div class="flex items-start justify-between mb-8 flex-wrap gap-4">
+    <div>
+      <div class="text-xs mono uppercase tracking-widest" style="color: var(--muted-2); margin-bottom: 6px;">Layer 1 · The Log</div>
+      <h1 class="text-3xl md:text-4xl font-bold tracking-tight" style="letter-spacing: -0.025em;">Good morning, Michael</h1>
+      <p class="text-sm muted mt-2">
+        Day <span id="stack-day">32</span> of your Recovery + Fat Loss stack · <span id="doses-due-today">2</span> doses due today
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="pill-streak">
+        <span class="pill-streak-dot"></span>
+        STREAK · <strong style="color: var(--text); font-weight: 600;">31 days</strong>
+      </div>
+      <button class="btn-primary" onclick="openNewStack()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        New stack
+      </button>
+    </div>
+  </div>
+
+  <!-- Metric cards -->
+  <div class="grid md:grid-cols-4 gap-4 mb-6">
+    <div class="panel p-5">
+      <div class="flex items-start justify-between mb-3">
+        <div class="text-[11px] mono uppercase tracking-widest" style="color: var(--muted-2); letter-spacing: 0.08em;">Energy</div>
+        <span class="metric-delta">+12%</span>
+      </div>
+      <div class="flex items-baseline gap-1.5 mb-3">
+        <span class="text-3xl font-bold" style="letter-spacing: -0.02em;">7.4</span>
+        <span class="text-sm muted-2">/10</span>
+      </div>
+      <svg width="100%" height="32" viewBox="0 0 100 32" preserveAspectRatio="none">
+        <polyline points="0,20 16,18 33,15 50,13 66,14 83,11 100,9"
+          fill="none" stroke="#34d399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="panel p-5">
+      <div class="flex items-start justify-between mb-3">
+        <div class="text-[11px] mono uppercase tracking-widest" style="color: var(--muted-2); letter-spacing: 0.08em;">Sleep Quality</div>
+        <span class="metric-delta">+18%</span>
+      </div>
+      <div class="flex items-baseline gap-1.5 mb-3">
+        <span class="text-3xl font-bold" style="letter-spacing: -0.02em;">8.1</span>
+        <span class="text-sm muted-2">/10</span>
+      </div>
+      <svg width="100%" height="32" viewBox="0 0 100 32" preserveAspectRatio="none">
+        <polyline points="0,22 16,19 33,15 50,12 66,9 83,7 100,5"
+          fill="none" stroke="#34d399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="panel p-5">
+      <div class="flex items-start justify-between mb-3">
+        <div class="text-[11px] mono uppercase tracking-widest" style="color: var(--muted-2); letter-spacing: 0.08em;">Weight (30d)</div>
+        <span class="metric-delta down">−4.2 lb</span>
+      </div>
+      <div class="flex items-baseline gap-1.5 mb-3">
+        <span class="text-3xl font-bold" style="letter-spacing: -0.02em;">182.4</span>
+        <span class="text-sm muted-2">lb</span>
+      </div>
+      <svg width="100%" height="32" viewBox="0 0 100 32" preserveAspectRatio="none">
+        <polyline points="0,6 16,9 33,13 50,16 66,19 83,22 100,26"
+          fill="none" stroke="#34d399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="panel p-5">
+      <div class="flex items-start justify-between mb-3">
+        <div class="text-[11px] mono uppercase tracking-widest" style="color: var(--muted-2); letter-spacing: 0.08em;">Mood</div>
+        <span class="metric-delta neutral">stable</span>
+      </div>
+      <div class="flex items-baseline gap-1.5 mb-3">
+        <span class="text-3xl font-bold" style="letter-spacing: -0.02em;">7.2</span>
+        <span class="text-sm muted-2">/10</span>
+      </div>
+      <svg width="100%" height="32" viewBox="0 0 100 32" preserveAspectRatio="none">
+        <polyline points="0,14 16,13 33,15 50,14 66,14 83,13 100,14"
+          fill="none" stroke="#34d399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="grid lg:grid-cols-3 gap-6">
+
+    <!-- LEFT: Current stack -->
+    <div class="lg:col-span-2">
+      <div class="panel p-6">
+        <div class="flex items-start justify-between mb-5">
+          <div>
+            <h2 class="text-lg font-bold tracking-tight" style="letter-spacing: -0.015em;">Current stack</h2>
+            <p class="text-xs mt-1" style="color: var(--muted-2);">Recovery + Fat Loss · Cycle 2 of 3 · 42-day protocol</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn-small" onclick="toast('Edit stack coming in beta')">Edit</button>
+            <button class="btn-small" onclick="toast('Share link coming in beta')">Share</button>
+          </div>
+        </div>
+
+        <div id="stack-list" class="space-y-3"></div>
+
+        <button class="w-full mt-4 py-3 rounded-xl border border-dashed text-sm muted hover:border-[#333] hover:text-white transition-colors" style="border-color: var(--border);" onclick="openAddCompound()">
+          + Add compound to stack
+        </button>
+      </div>
+    </div>
+
+    <!-- RIGHT: Today's protocol + Notes -->
+    <div class="space-y-6">
+      <div class="panel p-5">
+        <div class="flex items-start justify-between mb-5">
+          <h3 class="text-base font-bold tracking-tight">Today's protocol</h3>
+          <span class="text-xs mono" style="color: var(--muted-2);" id="today-date">Thu, Apr 16</span>
+        </div>
+        <div id="protocol-list" class="space-y-4"></div>
+      </div>
+
+      <div class="panel p-5">
+        <h3 class="text-base font-bold tracking-tight mb-5">Recent notes</h3>
+        <div id="notes-list" class="space-y-4"></div>
+        <button class="w-full mt-5 py-2.5 rounded-lg border text-sm muted hover:border-[#333] hover:text-white transition-colors" style="border-color: var(--border); background: var(--panel-2);" onclick="openAddNote()">
+          + Add note
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ===== COMPOUNDS TAB ===== -->
+<main id="tab-compounds" class="mx-auto px-6 py-8 hidden" style="max-width: 1400px;">
+  <div class="tab-coming-soon">
+    <div class="text-xs mono uppercase tracking-widest accent-text mb-4">Next release</div>
+    <h2>Compound library</h2>
+    <p>Searchable reference for every peptide — mechanism, research literature, common protocols, typical dose ranges, half-life, and community-aggregated outcomes. Coming in the beta.</p>
+  </div>
+</main>
+
+<!-- ===== FEED TAB ===== -->
+<main id="tab-feed" class="mx-auto px-6 py-8 hidden" style="max-width: 1400px;">
+  <div class="tab-coming-soon">
+    <div class="text-xs mono uppercase tracking-widest accent-text mb-4">Layer 2 · The Feed</div>
+    <h2>Protocols, not anecdotes</h2>
+    <p>Reddit-style posts where every post carries the author's structured data inline — a verified protocol card with dose, duration, vendor, and outcomes. Context turns anecdote into signal.</p>
+  </div>
+</main>
+
+<!-- ===== ATLAS TAB ===== -->
+<main id="tab-atlas" class="mx-auto px-6 py-8 hidden" style="max-width: 1400px;">
+  <div class="tab-coming-soon">
+    <div class="text-xs mono uppercase tracking-widest accent-text mb-4">Layer 3 · The Atlas</div>
+    <h2>What actually works</h2>
+    <p>Anonymized insights across the entire LogMyStack dataset. Compound effectiveness by goal. Vendor purity leaderboards. Stack compatibility. The signal that doesn't exist anywhere else today.</p>
+  </div>
+</main>
+
+<!-- Modals -->
+<div id="modal-backdrop" class="modal-backdrop" onclick="closeModalOnBackdrop(event)">
+
+  <!-- Log dose modal -->
+  <div id="modal-log-dose" class="modal hidden" onclick="event.stopPropagation()">
+    <h2>Log a dose</h2>
+    <p class="sub">Quickly record an injection or oral dose.</p>
+    <label>Compound</label>
+    <select class="input-field" id="log-compound">
+      <option>BPC-157</option>
+      <option>TB-500 (Thymosin β-4)</option>
+      <option>Semaglutide</option>
+      <option>Ipamorelin</option>
+    </select>
+    <div class="modal-row">
+      <div>
+        <label>Dose</label>
+        <input type="text" class="input-field" id="log-dose" placeholder="500" value="500">
+      </div>
+      <div>
+        <label>Unit</label>
+        <select class="input-field" id="log-unit">
+          <option>mcg</option>
+          <option>mg</option>
+          <option>IU</option>
+          <option>mL</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div>
+        <label>Route</label>
+        <select class="input-field" id="log-route">
+          <option>Subcutaneous</option>
+          <option>Intramuscular</option>
+          <option>Oral</option>
+          <option>Nasal</option>
+        </select>
+      </div>
+      <div>
+        <label>Site</label>
+        <select class="input-field" id="log-site">
+          <option>Abdomen</option>
+          <option>Thigh</option>
+          <option>Shoulder</option>
+          <option>Glute</option>
+          <option>N/A</option>
+        </select>
+      </div>
+    </div>
+    <label>Note (optional)</label>
+    <textarea class="input-field" id="log-note" placeholder="Felt tired before. Slight discomfort at site."></textarea>
+    <div class="modal-actions">
+      <button class="btn-small" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitLogDose()">Log dose</button>
+    </div>
+  </div>
+
+  <!-- Add compound modal -->
+  <div id="modal-add-compound" class="modal hidden" onclick="event.stopPropagation()">
+    <h2>Add to stack</h2>
+    <p class="sub">New compound for your current Recovery + Fat Loss stack.</p>
+    <label>Compound name</label>
+    <input type="text" class="input-field" id="new-compound-name" placeholder="e.g. MOTS-c">
+    <div class="modal-row">
+      <div>
+        <label>Dose per injection</label>
+        <input type="text" class="input-field" id="new-compound-dose" placeholder="e.g. 5 mg">
+      </div>
+      <div>
+        <label>Frequency</label>
+        <select class="input-field" id="new-compound-freq">
+          <option>Daily</option>
+          <option>2× daily</option>
+          <option>Every other day</option>
+          <option>2× weekly</option>
+          <option>1× weekly</option>
+          <option>Nightly</option>
+        </select>
+      </div>
+    </div>
+    <label>Goal</label>
+    <input type="text" class="input-field" id="new-compound-goal" placeholder="e.g. Mitochondrial health">
+    <div class="modal-row">
+      <div>
+        <label>Vendor</label>
+        <input type="text" class="input-field" id="new-compound-vendor" placeholder="e.g. PureRaws">
+      </div>
+      <div>
+        <label>Purity %</label>
+        <input type="text" class="input-field" id="new-compound-purity" placeholder="e.g. 98.7">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-small" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitAddCompound()">Add to stack</button>
+    </div>
+  </div>
+
+  <!-- Add note modal -->
+  <div id="modal-add-note" class="modal hidden" onclick="event.stopPropagation()">
+    <h2>Add note</h2>
+    <p class="sub">Record how you're feeling, a side effect, or a reflection.</p>
+    <label>Note</label>
+    <textarea class="input-field" id="new-note-text" placeholder="How's your shoulder today? Any side effects? Weight? Sleep?"></textarea>
+    <div class="modal-actions">
+      <button class="btn-small" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitAddNote()">Save note</button>
+    </div>
+  </div>
+
+  <!-- New stack modal -->
+  <div id="modal-new-stack" class="modal hidden" onclick="event.stopPropagation()">
+    <h2>Start a new stack</h2>
+    <p class="sub">Define your goal, duration, and cycle number.</p>
+    <label>Stack name</label>
+    <input type="text" class="input-field" id="new-stack-name" placeholder="e.g. Lean bulk Q3">
+    <div class="modal-row">
+      <div>
+        <label>Duration (days)</label>
+        <input type="text" class="input-field" id="new-stack-duration" placeholder="42">
+      </div>
+      <div>
+        <label>Cycle #</label>
+        <input type="text" class="input-field" id="new-stack-cycle" placeholder="1 of 3">
+      </div>
+    </div>
+    <label>Primary goal</label>
+    <input type="text" class="input-field" id="new-stack-goal" placeholder="e.g. Recovery + Fat Loss">
+    <div class="modal-actions">
+      <button class="btn-small" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitNewStack()">Create stack</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#34d399" stroke-width="2"/><path d="M8 12L11 15L16 9" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span id="toast-msg">Logged.</span>
+</div>
+
+<script>
+// ======== STATE ========
+const state = {
+  stack: {
+    name: 'Recovery + Fat Loss',
+    cycle: '2 of 3',
+    protocol: '42-day',
+    dayOf: 32,
+    dayTotal: 42,
+    compounds: [
+      {
+        id: 1, name: 'BPC-157', tag: 'Healing', tagClass: 'healing',
+        due: '8:00 AM', dose: '500 mcg', route: 'SubQ', frequency: '2× daily',
+        day: 32, dayTotal: 42, goal: 'Shoulder tendinitis recovery',
+        vendor: 'LimitlessLife', purity: '99.1%',
+        dotsFilled: 4, dotsTotal: 7,
+      },
+      {
+        id: 2, name: 'TB-500 (Thymosin β-4)', tag: 'Healing', tagClass: 'healing',
+        due: null, dose: '2 mg', route: 'SubQ', frequency: '2× weekly',
+        day: 32, dayTotal: 42, goal: 'Connective tissue repair',
+        vendor: 'PureRaws', purity: '98.7%',
+        dotsFilled: 3, dotsTotal: 7,
+      },
+      {
+        id: 3, name: 'Semaglutide', tag: 'GLP-1', tagClass: 'glp1',
+        statusTag: 'Mild nausea reported', statusClass: 'warn',
+        due: null, dose: '0.5 mg', route: 'SubQ', frequency: '1× weekly',
+        week: 13, weekNote: 'titration complete',
+        goal: 'Fat loss', vendor: 'PepSciences', purity: '97.2%',
+        dotsFilled: 1, dotsTotal: 7,
+      },
+      {
+        id: 4, name: 'Ipamorelin', tag: 'GH Secretagogue', tagClass: 'gh',
+        due: '10:00 PM', dose: '300 mcg', route: 'SubQ', frequency: 'Nightly',
+        day: 120, continuous: true,
+        goal: 'Sleep quality, recovery', vendor: 'LimitlessLife', purity: '99.1%',
+        dotsFilled: 6, dotsTotal: 7,
+      },
+    ]
+  },
+  protocol: [
+    { id: 'p1', time: '8:00', compound: 'BPC-157', dose: '500 mcg', route: 'Subcutaneous · abdomen', status: 'pending' },
+    { id: 'p2', time: '8:00', compound: 'Ipamorelin', dose: '300 mcg', status: 'logged', loggedAt: 'Logged at 10:04 PM yesterday' },
+    { id: 'p3', time: '8:00', compound: 'BPC-157', dose: '500 mcg', route: 'Subcutaneous · abdomen', status: 'pending' },
+    { id: 'p4', time: '22:00', compound: 'Ipamorelin', dose: '300 mcg', route: 'Subcutaneous · thigh', status: 'pending' },
+  ],
+  notes: [
+    { date: 'Apr 14', text: 'Shoulder impingement noticeably better. First pain-free overhead press in 4 months.' },
+    { date: 'Apr 10', text: 'Mild nausea first 3 hrs after sema injection. Took with food, resolved.' },
+    { date: 'Apr 5', text: 'Sleep latency is cut in half since starting ipamorelin. Wake up genuinely rested.' },
+  ],
+};
+
+// ======== RENDER ========
+function renderStack() {
+  const list = document.getElementById('stack-list');
+  const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  // Week starts Monday. getDay(): 0=Sun, 1=Mon...6=Sat. Map to 0=Mon...6=Sun.
+  const jsDay = new Date().getDay();
+  const todayIdx = jsDay === 0 ? 6 : jsDay - 1;
+  list.innerHTML = state.stack.compounds.map(c => {
+    const dots = Array.from({length: c.dotsTotal}, (_, i) =>
+      `<div class="dose-day ${i === todayIdx ? 'today' : ''}">
+        <span class="dose-day-label">${dayLabels[i] || ''}</span>
+        <span class="dose-dot ${i < c.dotsFilled ? 'filled' : ''}"></span>
+      </div>`
+    ).join('');
+    const dueBadge = c.due ? `<span class="badge due due-time">Due ${c.due}</span>` : '';
+    const statusBadge = c.statusTag ? `<span class="badge ${c.statusClass}">${c.statusTag}</span>` : '';
+    const dayLine = c.continuous
+      ? `Day ${c.day} (continuous)`
+      : (c.week ? `Week ${c.week} (${c.weekNote})` : `Day ${c.day}/${c.dayTotal}`);
+    const progress = c.continuous ? 100 : (c.week ? 100 : (c.day / c.dayTotal) * 100);
+    return `
+      <div class="panel-2 p-4">
+        <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <span class="font-semibold text-[15px]">${c.name}</span>
+            <span class="badge ${c.tagClass}">${c.tag}</span>
+            ${dueBadge}
+            ${statusBadge}
+          </div>
+          <div class="dose-week">${dots}</div>
+        </div>
+        <div class="text-xs mono mb-2" style="color: var(--muted);">
+          ${c.dose} · ${c.route} · ${c.frequency} · ${dayLine}
+        </div>
+        <div class="text-xs mb-3" style="color: var(--muted-2);">
+          Goal: ${c.goal} · Vendor: ${c.vendor} (${c.purity} pure)
+        </div>
+        <div class="progress"><div class="progress-fill" style="width: ${progress}%"></div></div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderProtocol() {
+  const list = document.getElementById('protocol-list');
+  list.innerHTML = state.protocol.map(p => {
+    if (p.status === 'logged') {
+      return `
+        <div class="flex items-start gap-3">
+          <div class="text-xs mono pt-0.5" style="color: var(--muted-2); min-width: 32px;">${p.time}</div>
+          <div class="flex-1">
+            <div class="logged-text text-sm font-medium">${p.compound} · ${p.dose}</div>
+            <div class="logged-confirm mt-1">✓ ${p.loggedAt}</div>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="flex items-start gap-3">
+        <div class="text-xs mono pt-0.5" style="color: var(--muted-2); min-width: 32px;">${p.time}</div>
+        <div class="flex-1">
+          <div class="text-sm font-medium">${p.compound} · ${p.dose}</div>
+          ${p.route ? `<div class="text-xs mt-0.5" style="color: var(--muted-2);">${p.route}</div>` : ''}
+        </div>
+        <button class="btn-log" onclick="logProtocolItem('${p.id}')">Log</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderNotes() {
+  const list = document.getElementById('notes-list');
+  list.innerHTML = state.notes.map(n => `
+    <div class="flex gap-3" style="border-left: 2px solid var(--accent-dim); padding-left: 12px;">
+      <div class="flex-1">
+        <div class="text-[11px] mono mb-1.5" style="color: var(--muted-2); letter-spacing: 0.05em;">${n.date}</div>
+        <div class="text-sm leading-relaxed" style="color: var(--muted);">${n.text}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateDosesDueToday() {
+  const pending = state.protocol.filter(p => p.status === 'pending').length;
+  document.getElementById('doses-due-today').textContent = pending;
+}
+
+function renderAll() {
+  renderStack();
+  renderProtocol();
+  renderNotes();
+  updateDosesDueToday();
+}
+
+// ======== TAB SWITCHING ========
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const name = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    ['log','compounds','feed','atlas'].forEach(n => {
+      document.getElementById('tab-' + n).classList.toggle('hidden', n !== name);
+    });
+    if (window.posthog) posthog.capture('demo_tab_clicked', { tab: name });
+  });
+});
+
+// ======== LOG PROTOCOL ITEM ========
+function logProtocolItem(id) {
+  const item = state.protocol.find(p => p.id === id);
+  if (item) {
+    item.status = 'logged';
+    item.loggedAt = 'Logged just now';
+  }
+  renderAll();
+  toast('Dose logged ✓');
+  if (window.posthog) posthog.capture('demo_dose_quick_logged', { compound: item?.compound });
+}
+
+// ======== MODAL CONTROL ========
+function openModal(id) {
+  document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  document.getElementById('modal-backdrop').classList.add('active');
+}
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('active');
+}
+function closeModalOnBackdrop(e) {
+  if (e.target.id === 'modal-backdrop') closeModal();
+}
+
+function openLogDose() {
+  openModal('modal-log-dose');
+  if (window.posthog) posthog.capture('demo_log_dose_opened');
+}
+function openAddCompound() {
+  openModal('modal-add-compound');
+  if (window.posthog) posthog.capture('demo_add_compound_opened');
+}
+function openAddNote() {
+  openModal('modal-add-note');
+  if (window.posthog) posthog.capture('demo_add_note_opened');
+}
+function openNewStack() {
+  openModal('modal-new-stack');
+  if (window.posthog) posthog.capture('demo_new_stack_opened');
+}
+
+// ======== SUBMIT HANDLERS ========
+function submitLogDose() {
+  const compound = document.getElementById('log-compound').value;
+  const dose = document.getElementById('log-dose').value;
+  const unit = document.getElementById('log-unit').value;
+  const route = document.getElementById('log-route').value;
+  const site = document.getElementById('log-site').value;
+  if (!dose) { toast('Enter a dose'); return; }
+
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false });
+  state.protocol.unshift({
+    id: 'p-' + Date.now(),
+    time: timeStr,
+    compound,
+    dose: `${dose} ${unit}`,
+    status: 'logged',
+    loggedAt: 'Logged just now',
+  });
+  closeModal();
+  renderAll();
+  toast(`${compound} logged`);
+  if (window.posthog) posthog.capture('demo_dose_logged', { compound, dose: `${dose} ${unit}`, route });
+}
+
+function submitAddCompound() {
+  const name = document.getElementById('new-compound-name').value.trim();
+  const dose = document.getElementById('new-compound-dose').value.trim();
+  const freq = document.getElementById('new-compound-freq').value;
+  const goal = document.getElementById('new-compound-goal').value.trim() || '—';
+  const vendor = document.getElementById('new-compound-vendor').value.trim() || 'Not specified';
+  const purity = document.getElementById('new-compound-purity').value.trim() || 'N/A';
+  if (!name || !dose) { toast('Name and dose required'); return; }
+
+  state.stack.compounds.push({
+    id: Date.now(), name, tag: 'Custom', tagClass: 'healing',
+    dose, route: 'SubQ', frequency: freq,
+    day: 1, dayTotal: 42,
+    goal, vendor, purity: purity + (purity !== 'N/A' ? '%' : ''),
+    dotsFilled: 0, dotsTotal: 7,
+  });
+  closeModal();
+  renderAll();
+  toast(`${name} added to stack`);
+  if (window.posthog) posthog.capture('demo_compound_added', { name });
+}
+
+function submitAddNote() {
+  const text = document.getElementById('new-note-text').value.trim();
+  if (!text) { toast('Enter a note'); return; }
+  const d = new Date();
+  const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  state.notes.unshift({ date, text });
+  document.getElementById('new-note-text').value = '';
+  closeModal();
+  renderNotes();
+  toast('Note saved');
+  if (window.posthog) posthog.capture('demo_note_added');
+}
+
+function submitNewStack() {
+  const name = document.getElementById('new-stack-name').value.trim();
+  const goal = document.getElementById('new-stack-goal').value.trim();
+  if (!name) { toast('Enter a stack name'); return; }
+  closeModal();
+  toast(`Stack "${name}" ready (demo only)`);
+  if (window.posthog) posthog.capture('demo_stack_created', { name });
+}
+
+// ======== TOAST ========
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ======== INIT ========
+// Set today's date dynamically
+const today = new Date();
+document.getElementById('today-date').textContent = today.toLocaleDateString('en-US', {
+  weekday: 'short', month: 'short', day: 'numeric'
+});
+
+renderAll();
+
+// Track page load
+if (window.posthog) posthog.capture('demo_viewed');
+</script>
+
+</body>
+</html>
