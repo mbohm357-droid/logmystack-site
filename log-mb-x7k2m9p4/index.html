@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log</title>
+<meta name="description" content="">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="googlebot" content="noindex, nofollow">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0a0a;
+    --panel: #111111;
+    --panel-2: #161616;
+    --border: #262626;
+    --border-2: #1f1f1f;
+    --text: #fafafa;
+    --muted: #a3a3a3;
+    --muted-2: #737373;
+    --accent: #34d399;
+    --accent-dim: #0d4a35;
+    --warn: #fbbf24;
+    --danger: #f87171;
+  }
+  * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; box-sizing: border-box; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  html, body {
+    background-color: #0a0a0a !important;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
+  .panel-2 { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; }
+  .muted { color: var(--muted); }
+  .muted-2 { color: var(--muted-2); }
+  .accent-text { color: var(--accent); }
+  .warn-text { color: var(--warn); }
+  .danger-text { color: var(--danger); }
+
+  .tab {
+    font-size: 14px; font-weight: 500; color: var(--muted);
+    padding: 8px 16px; border-radius: 8px; cursor: pointer;
+    transition: all 0.15s; background: transparent; border: none;
+  }
+  .tab:hover { color: var(--text); background: #161616; }
+  .tab.active { color: var(--accent); background: rgba(52,211,153,0.08); }
+
+  .btn-primary {
+    background: var(--accent); color: #052e1a; font-weight: 600;
+    padding: 9px 16px; border-radius: 9px; font-size: 13px;
+    cursor: pointer; border: none; transition: opacity 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-small {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    font-weight: 500; padding: 6px 12px; border-radius: 7px;
+    font-size: 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-small:hover { background: #1f1f1f; border-color: #333; }
+  .btn-danger {
+    background: transparent; color: var(--danger); border: 1px solid rgba(248,113,113,0.3);
+    font-weight: 500; padding: 6px 12px; border-radius: 7px;
+    font-size: 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-danger:hover { background: rgba(248,113,113,0.08); border-color: var(--danger); }
+  .btn-log {
+    background: transparent; color: var(--accent); border: 1px solid rgba(52,211,153,0.25);
+    font-weight: 500; padding: 4px 14px; border-radius: 999px;
+    font-size: 12px; cursor: pointer; font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.08em; transition: all 0.15s;
+  }
+  .btn-log:hover { background: rgba(52,211,153,0.08); border-color: var(--accent); }
+
+  .pill-streak {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.22);
+    color: var(--accent); padding: 5px 11px 5px 9px; border-radius: 999px;
+    font-size: 12px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;
+  }
+  .pill-streak-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 10px rgba(52,211,153,0.7);
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; font-size: 10.5px;
+    font-family: 'JetBrains Mono', monospace; text-transform: uppercase;
+    letter-spacing: 0.07em; padding: 2px 9px; border-radius: 5px;
+    font-weight: 500; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--muted);
+  }
+  .badge.healing { color: #93c5fd; border-color: rgba(147,197,253,0.25); background: rgba(147,197,253,0.06); }
+  .badge.glp1 { color: #c4b5fd; border-color: rgba(196,181,253,0.25); background: rgba(196,181,253,0.06); }
+  .badge.gh { color: #fcd34d; border-color: rgba(252,211,77,0.25); background: rgba(252,211,77,0.06); }
+  .badge.cognitive { color: #f9a8d4; border-color: rgba(249,168,212,0.25); background: rgba(249,168,212,0.06); }
+  .badge.metabolic { color: #fdba74; border-color: rgba(253,186,116,0.25); background: rgba(253,186,116,0.06); }
+  .badge.warn { color: var(--warn); border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.06); }
+  .badge.due { color: var(--accent); border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.06); }
+
+  .dose-week { display: inline-flex; gap: 6px; align-items: flex-end; }
+  .dose-day { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 14px; }
+  .dose-day-label {
+    font-size: 9px; font-family: 'JetBrains Mono', monospace; color: var(--muted-2);
+    letter-spacing: 0.05em; text-transform: uppercase; line-height: 1; font-weight: 500;
+  }
+  .dose-day.today .dose-day-label { color: var(--accent); font-weight: 700; }
+  .dose-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border); display: block; transition: background 0.15s;
+  }
+  .dose-dot.filled { background: var(--accent); }
+  .dose-day.today .dose-dot { box-shadow: 0 0 0 2px rgba(52,211,153,0.3); }
+  .dose-day.today .dose-dot:not(.filled) {
+    background: #0a0a0a; border: 1px solid var(--accent);
+  }
+
+  .progress { height: 3px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, #34d399, #6ee7b7); border-radius: 999px;
+  }
+
+  .input-field {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 13px; border-radius: 9px; font-size: 14px; width: 100%;
+    transition: border-color 0.15s;
+  }
+  .input-field:focus { outline: none; border-color: rgba(52,211,153,0.5); }
+
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--accent-dim); color: var(--accent);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 12px; border: 1px solid rgba(52,211,153,0.3);
+  }
+
+  .logged-text { text-decoration: line-through; color: var(--muted-2); }
+  .logged-confirm { color: var(--accent); font-size: 11.5px; font-family: 'JetBrains Mono', monospace; }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px); display: none;
+    align-items: center; justify-content: center; z-index: 100; padding: 16px;
+    overflow-y: auto;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    width: 100%; max-width: 520px; padding: 28px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 4px; }
+  .modal .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .modal label {
+    display: block; font-size: 12px; font-weight: 500; color: var(--muted);
+    margin-bottom: 6px; margin-top: 14px; text-transform: uppercase;
+    letter-spacing: 0.06em; font-family: 'JetBrains Mono', monospace;
+  }
+  .modal label:first-of-type { margin-top: 0; }
+  .modal textarea { min-height: 90px; resize: vertical; }
+  .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+
+  select.input-field {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23a3a3a3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px;
+  }
+
+  .hidden { display: none !important; }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--panel); border: 1px solid rgba(52,211,153,0.3); color: var(--text);
+    padding: 12px 18px; border-radius: 10px; font-size: 13px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    display: none; align-items: center; gap: 8px; z-index: 200;
+    animation: toastIn 0.2s ease-out;
+  }
+  .toast.show { display: inline-flex; }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .empty-state {
+    text-align: center; padding: 60px 24px; color: var(--muted);
+  }
+  .empty-state h3 {
+    color: var(--text); font-size: 18px; font-weight: 600; margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .empty-state p { font-size: 13px; max-width: 360px; margin: 0 auto 18px; line-height: 1.6; }
+
+  .metric-input-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .metric-input-row label { width: 80px; font-size: 12px; color: var(--muted); margin: 0; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace; }
+  .metric-slider { flex: 1; -webkit-appearance: none; appearance: none; background: var(--panel-2); height: 4px; border-radius: 2px; outline: none; }
+  .metric-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+  .metric-slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: none; }
+  .metric-value { width: 36px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); font-weight: 600; }
+
+  .history-row {
+    display: grid; grid-template-columns: 80px 90px 1fr; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border-2);
+    font-size: 13px; align-items: start;
+  }
+  .history-row:last-child { border-bottom: none; }
+  .history-date { color: var(--muted-2); font-family: 'JetBrains Mono', monospace; font-size: 11px; padding-top: 1px; }
+  .history-type {
+    font-size: 10px; padding: 2px 7px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; text-transform: uppercase;
+    letter-spacing: 0.05em; height: fit-content; font-weight: 500;
+  }
+  .history-type.dose { background: rgba(52,211,153,0.1); color: var(--accent); }
+  .history-type.note { background: rgba(147,197,253,0.1); color: #93c5fd; }
+  .history-type.metric { background: rgba(252,211,77,0.1); color: #fcd34d; }
+  .history-content { color: var(--text); line-height: 1.5; }
+  .history-meta { color: var(--muted-2); font-size: 11.5px; margin-top: 3px; }
+
+  .url-banner {
+    background: rgba(251,191,36,0.06); border-bottom: 1px solid rgba(251,191,36,0.2);
+    color: var(--warn); padding: 6px 24px; text-align: center;
+    font-size: 11.5px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.03em;
+  }
+</style>
+</head>
+<body>
+
+<!-- Auth gate (shown until logged in) -->
+<div id="auth-gate" style="position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px;">
+  <div class="panel p-8" style="max-width: 420px; width: 100%;">
+    <div class="flex items-center gap-2 mb-7 justify-center">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2 L22 8 L22 16 L12 22 L2 16 L2 8 Z" stroke="#34d399" stroke-width="1.5"/>
+        <path d="M12 8 L17 11 L17 13 L12 16 L7 13 L7 11 Z" fill="#34d399"/>
+      </svg>
+      <span class="text-base font-bold tracking-tight">Log</span>
+    </div>
+
+    <div id="auth-form-view">
+      <h2 class="text-xl font-bold mb-1 tracking-tight">Sign in</h2>
+      <p class="text-sm muted mb-6">We'll email you a one-time link.</p>
+      <label class="block text-xs mono uppercase muted mb-2" style="letter-spacing: 0.06em;">Email</label>
+      <input type="email" class="input-field mb-4" id="auth-email" value="mbohm357@gmail.com" autocomplete="email">
+      <button class="btn-primary w-full justify-center" onclick="handleSendMagicLink()" id="auth-send-btn">Send magic link</button>
+    </div>
+
+    <div id="auth-sent-view" class="hidden text-center">
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z" stroke="#34d399" stroke-width="1.6"/></svg>
+      </div>
+      <h2 class="text-xl font-bold mb-2 tracking-tight">Check your email</h2>
+      <p class="text-sm muted mb-1">We sent a magic link to</p>
+      <p class="text-sm font-medium accent-text mb-6 mono" id="auth-sent-email">your@email.com</p>
+      <button class="btn-small" onclick="resetAuthForm()">Use different email</button>
+    </div>
+
+    <div id="auth-loading-view" class="hidden text-center py-4">
+      <p class="text-sm muted">Loading...</p>
+    </div>
+  </div>
+</div>
+
+<!-- Top nav -->
+<header style="border-bottom: 1px solid var(--border); background: #0a0a0a; position: sticky; top: 0; z-index: 50;">
+  <div class="mx-auto px-6 py-3 flex items-center justify-between" style="max-width: 1400px;">
+    <div class="flex items-center gap-8">
+      <div class="flex items-center gap-2">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2 L22 8 L22 16 L12 22 L2 16 L2 8 Z" stroke="#34d399" stroke-width="1.5"/>
+          <path d="M12 8 L17 11 L17 13 L12 16 L7 13 L7 11 Z" fill="#34d399"/>
+        </svg>
+        <span class="text-[14px] font-bold tracking-tight">Log</span>
+        <span class="text-[10px] mono uppercase tracking-widest ml-2 px-2 py-0.5 rounded" style="background: var(--panel-2); color: var(--muted-2);">Private</span>
+      </div>
+      <nav class="flex items-center gap-1">
+        <button class="tab active" data-tab="today">Today</button>
+        <button class="tab" data-tab="stack">Stack</button>
+        <button class="tab" data-tab="history">History</button>
+        <button class="tab" data-tab="metrics">Metrics</button>
+        <button class="tab" data-tab="settings">Settings</button>
+      </nav>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="pill-streak" id="header-streak" style="display: none;">
+        <span class="pill-streak-dot"></span>
+        <span id="streak-text">0 days</span>
+      </div>
+      <button class="btn-primary" onclick="openLogDose()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        Log dose
+      </button>
+      <div class="avatar">MB</div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== TODAY TAB ===== -->
+<main id="tab-today" class="mx-auto px-6 py-8" style="max-width: 1400px;">
+
+  <div class="flex items-start justify-between mb-8 flex-wrap gap-4">
+    <div>
+      <div class="text-xs mono uppercase tracking-widest" style="color: var(--muted-2); margin-bottom: 6px;" id="today-greeting-label">Today</div>
+      <h1 class="text-3xl md:text-4xl font-bold tracking-tight" style="letter-spacing: -0.025em;" id="today-greeting">Good morning</h1>
+      <p class="text-sm muted mt-2" id="today-subtitle">No active stack yet.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button class="btn-small" onclick="openAddNote()">+ Note</button>
+      <button class="btn-small" onclick="openCheckin()">+ Check-in</button>
+    </div>
+  </div>
+
+  <!-- Today's metric card row (filled in if today's check-in exists) -->
+  <div id="today-metric-row" class="grid md:grid-cols-4 gap-4 mb-6"></div>
+
+  <!-- Main grid -->
+  <div class="grid lg:grid-cols-3 gap-6">
+
+    <!-- LEFT: Today's protocol -->
+    <div class="lg:col-span-2 space-y-6">
+      <div class="panel p-6" id="today-protocol-panel">
+        <div class="flex items-start justify-between mb-5">
+          <div>
+            <h2 class="text-lg font-bold tracking-tight">Today's protocol</h2>
+            <p class="text-xs mt-1" style="color: var(--muted-2);" id="today-date-line">—</p>
+          </div>
+          <button class="btn-small" onclick="switchTab('stack')">Manage stack</button>
+        </div>
+        <div id="today-protocol-list"></div>
+      </div>
+
+      <div class="panel p-6">
+        <div class="flex items-start justify-between mb-5">
+          <h2 class="text-lg font-bold tracking-tight">Current stack</h2>
+          <button class="btn-small" onclick="openAddCompound()">+ Add compound</button>
+        </div>
+        <div id="today-stack-list" class="space-y-3"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Check-in + Notes -->
+    <div class="space-y-6">
+      <div class="panel p-5" id="today-checkin-panel">
+        <h3 class="text-base font-bold tracking-tight mb-1">Daily check-in</h3>
+        <p class="text-xs muted-2 mb-4" id="checkin-status">Not logged yet today.</p>
+        <button class="btn-primary w-full justify-center" onclick="openCheckin()" id="checkin-btn">+ Quick check-in</button>
+      </div>
+
+      <div class="panel p-5">
+        <div class="flex items-start justify-between mb-5">
+          <h3 class="text-base font-bold tracking-tight">Recent notes</h3>
+          <button class="btn-small" onclick="openAddNote()">+ Add</button>
+        </div>
+        <div id="today-notes-list" class="space-y-4"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ===== STACK TAB ===== -->
+<main id="tab-stack" class="mx-auto px-6 py-8 hidden" style="max-width: 1400px;">
+  <div class="flex items-start justify-between mb-6 flex-wrap gap-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight" style="letter-spacing: -0.02em;">Stacks</h1>
+      <p class="text-sm muted mt-1">Manage your active and past protocols.</p>
+    </div>
+    <button class="btn-primary" onclick="openNewStack()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+      New stack
+    </button>
+  </div>
+  <div id="stacks-container" class="space-y-6"></div>
+</main>
+
+<!-- ===== HISTORY TAB ===== -->
+<main id="tab-history" class="mx-auto px-6 py-8 hidden" style="max-width: 1400px;">
+  <div class="flex items-start justify-between mb-6 flex-wrap gap-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight" style="letter-spacing: -0.02em;">History</h1>
+      <p class="text-sm muted mt-1">Every dose, note, and check-in.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <select class="input-field" id="history-filter" style="width: auto;" onchange="renderHistory()">
+        <option value="all">All</option>
+        <option value="dose">Doses only</option>
+        <option value="note">Notes only</option>
+        <option value="metric">Check-ins only</option>
+      </select>
+    </div>
+  </div>
+  <div class="panel p-6">
+    <div id="history-list"></div>
+  </div>
+</main>
+
+<!-- ===== METRICS TAB ===== -->
+<main id="tab-metrics" class="mx-auto px-6 py-8 hidden" style="max-width: 1400px;">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold tracking-tight" style="letter-spacing: -0.02em;">Metrics</h1>
+    <p class="text-sm muted mt-1">30-day trends from your check-ins.</p>
+  </div>
+  <div id="metrics-grid" class="grid md:grid-cols-2 gap-6"></div>
+</main>
+
+<!-- ===== SETTINGS TAB ===== -->
+<main id="tab-settings" class="mx-auto px-6 py-8 hidden" style="max-width: 720px;">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold tracking-tight" style="letter-spacing: -0.02em;">Settings</h1>
+    <p class="text-sm muted mt-1">Backup, restore, and clear your data.</p>
+  </div>
+
+  <div class="panel p-6 mb-6">
+    <h3 class="text-base font-bold tracking-tight mb-2">Backup your data</h3>
+    <p class="text-sm muted mb-4">All data lives in this browser only. Export regularly so you don't lose it. Import to restore from a backup or move to another device.</p>
+    <div class="flex gap-2 flex-wrap">
+      <button class="btn-primary" onclick="exportData()">Download backup (JSON)</button>
+      <button class="btn-small" onclick="document.getElementById('import-file').click()">Import from file</button>
+      <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)">
+    </div>
+  </div>
+
+  <div class="panel p-6 mb-6">
+    <h3 class="text-base font-bold tracking-tight mb-2">Account</h3>
+    <p class="text-sm muted mb-2"><strong style="color: var(--text);">Signed in as:</strong> <span class="mono" id="account-email">—</span></p>
+    <p class="text-sm muted mb-2"><strong style="color: var(--text);">URL:</strong> <span class="mono" id="current-url">—</span></p>
+    <p class="text-sm muted mb-4"><strong style="color: var(--text);">Storage:</strong> Supabase — synced across all your devices.</p>
+    <button class="btn-small" onclick="signOut()">Sign out</button>
+  </div>
+
+  <div class="panel p-6" style="border-color: rgba(248,113,113,0.2);">
+    <h3 class="text-base font-bold tracking-tight mb-2 danger-text">Danger zone</h3>
+    <p class="text-sm muted mb-4">Permanently delete all stacks, doses, notes, and check-ins from this browser. Export a backup first if you might want it later.</p>
+    <button class="btn-danger" onclick="confirmClearAll()">Clear all data</button>
+  </div>
+</main>
+
+<!-- Modals -->
+<div id="modal-backdrop" class="modal-backdrop" onclick="closeModalOnBackdrop(event)">
+
+  <!-- Log dose modal -->
+  <div id="modal-log-dose" class="modal hidden" onclick="event.stopPropagation()">
+    <h2>Log a dose</h2>
+    <p class="sub">Record an injection or oral dose.</p>
+    <label>Compound</label>
+    <select class="input-field" id="log-compound"></select>
+    <div class="modal-row">
+      <div>
+        <label>Dose</label>
+        <input type="text" class="input-field" id="log-dose" placeholder="500">
+      </div>
+      <div>
+        <label>Unit</label>
+        <select class="input-field" id="log-unit">
+          <option>mcg</option><option>mg</option><option>IU</option><option>mL</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div>
+        <label>Route</label>
+        <select class="input-field" id="log-route">
+          <option>Subcutaneous</option><option>Intramuscular</option>
+          <option>Oral</option><option>Nasal</option>
+        </select>
+      </div>
+      <div>
+        <label>Site</label>
+        <select class="input-field" id="log-site">
+          <option>Abdomen</option><option>Thigh</option><option>Shoulder</option>
+          <option>Glute</option><option>N/A</option>
+        </select>
+      </div>
+    </div>
+    <label>Note (optional)</label>
+    <textarea class="input-field" id="log-note" placeholder="How did you feel? Any side effects?"></textarea>
+    <div class="modal-actions">
+      <button class="btn-small" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitLogDose()">Log dose</button>
+    </div>
+  </div>
+
+  <!-- New stack modal -->
+  <div id="modal-new-stack" class="modal hidden" onclick="event.stopPropagation()">
+    <h2 id="stack-modal-title">Start a new stack</h2>
+    <p class="sub">Define your goal, duration, and cycle.</p>
+    <input type="hidden" id="edit-stack-id">
+    <label>Stack name</label>
+    <input type="text" class="input-field" id="new-stack-name" placeholder="e.g. Recovery + Fat Loss">
+    <label>Primary goal</label>
+    <input type="text" class="input-field" id="new-stack-goal" placeholder="e.g. Tendinitis recovery + 10lb fat loss">
+    <div class="modal-row">
+      <div>
+        <label>Duration (days)</label>
+        <input type="number" class="input-field" id="new-stack-duration" placeholder="42">
+      </div>
+      <div>
+        <label>Cycle # (optional)</label>
+        <input type="text" class="input-field" id="new-stack-cycle" placeholder="1 of 3">
+      </div>
+    </div>
+    <label>Start date</label>
+    <input type="date" class="input-field" id="new-stack-startdate">
+    <div class="modal-actions">
+      <button class="btn-small" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitNewStack()" id="stack-submit-btn">Create stack</button>
+    </div>
+  </div>
+
+  <!-- Add compound modal -->
+  <div id="modal-add-compound" class="modal hidden" onclick="event.stopPropagation()">
+    <h2 id="compound-modal-title">Add compound</h2>
+    <p class="sub">Add to your active stack.</p>
+    <input type="hidden" id="edit-compound-id">
+    <label>Compound name</label>
+    <input type="text" class="input-field" id="new-compound-name" placeholder="e.g. BPC-157">
+    <label>Tag</label>
+    <select class="input-field" id="new-compound-tag">
+      <option value="healing">Healing</option>
+      <option value="glp1">GLP-1</option>
+      <option value="gh">GH Secretagogue</option>
+      <option value="cognitive">Cognitive</option>
+      <option value="metabolic">Metabolic</option>
+      <option value="">Other</option>
+    </select>
+    <div class="modal-row">
+      <div>
+        <label>Dose per injection</label>
+        <input type="text" class="input-field" id="new-compound-dose" placeholder="500 mcg">
+      </div>
+      <div>
+        <label>Frequency</label>
+        <select class="input-field" id="new-compound-freq">
+          <option>Daily</option><option>2× daily</option>
+          <option>Every other day</option><option>2× weekly</option>
+          <option>1× weekly</option><option>Nightly</option>
+          <option>As needed</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div>
+        <label>Route</label>
+        <select class="input-field" id="new-compound-route">
+          <option>SubQ</option><option>IM</option><option>Oral</option><option>Nasal</option>
+        </select>
+      </div>
+      <div>
+        <label>Due time (optional)</label>
+        <input type="text" class="input-field" id="new-compound-due" placeholder="8:00 AM">
+      </div>
+    </div>
+    <label>Goal</label>
+    <input type="text" class="input-field" id="new-compound-goal" placeholder="e.g. Shoulder tendinitis recovery">
+    <div class="modal-row">
+      <div>
+        <label>Vendor</label>
+        <input type="text" class="input-field" id="new-compound-vendor" placeholder="e.g. PureRaws">
+      </div>
+      <div>
+        <label>Purity %</label>
+        <input type="text" class="input-field" id="new-compound-purity" placeholder="98.7">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-small" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitAddCompound()" id="compound-submit-btn">Add compound</button>
+    </div>
+  </div>
+
+  <!-- Add note modal -->
+  <div id="modal-add-note" class="modal hidden" onclick="event.stopPropagation()">
+    <h2>Add note</h2>
+    <p class="sub">Record how you're feeling, a side effect, or a reflection.</p>
+    <label>Note</label>
+    <textarea class="input-field" id="new-note-text" placeholder="How's your shoulder today? Side effects? Sleep?"></textarea>
+    <div class="modal-actions">
+      <button class="btn-small" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitAddNote()">Save note</button>
+    </div>
+  </div>
+
+  <!-- Check-in modal -->
+  <div id="modal-checkin" class="modal hidden" onclick="event.stopPropagation()">
+    <h2>Daily check-in</h2>
+    <p class="sub">Quick rating for energy, sleep, mood, plus weight.</p>
+    <div class="metric-input-row">
+      <label>Energy</label>
+      <input type="range" min="1" max="10" step="0.5" value="7" class="metric-slider" id="ci-energy" oninput="document.getElementById('ci-energy-v').textContent=this.value">
+      <span class="metric-value" id="ci-energy-v">7</span>
+    </div>
+    <div class="metric-input-row">
+      <label>Sleep</label>
+      <input type="range" min="1" max="10" step="0.5" value="7" class="metric-slider" id="ci-sleep" oninput="document.getElementById('ci-sleep-v').textContent=this.value">
+      <span class="metric-value" id="ci-sleep-v">7</span>
+    </div>
+    <div class="metric-input-row">
+      <label>Mood</label>
+      <input type="range" min="1" max="10" step="0.5" value="7" class="metric-slider" id="ci-mood" oninput="document.getElementById('ci-mood-v').textContent=this.value">
+      <span class="metric-value" id="ci-mood-v">7</span>
+    </div>
+    <label>Weight (optional)</label>
+    <input type="number" step="0.1" class="input-field" id="ci-weight" placeholder="lb">
+    <label>Note (optional)</label>
+    <textarea class="input-field" id="ci-note" placeholder="Anything to remember about today..."></textarea>
+    <div class="modal-actions">
+      <button class="btn-small" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitCheckin()">Save check-in</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#34d399" stroke-width="2"/><path d="M8 12L11 15L16 9" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span id="toast-msg">Saved.</span>
+</div>
+
+<script>
+// ============== SUPABASE ==============
+const SUPABASE_URL = 'https://axnlmmxkydsrqrshlenz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_XS1xdqyGTMq8uf5GrrEYaQ_YRnD6_XE';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function defaultState() {
+  return {
+    stacks: [],
+    doses: [],
+    notes: [],
+    checkins: [],
+    activeStackId: null,
+  };
+}
+let state = defaultState();
+let currentUser = null;
+let saveQueued = false;
+let savePending = false;
+
+async function loadStateFromDb() {
+  if (!currentUser) return;
+  const { data, error } = await sb
+    .from('user_data')
+    .select('data')
+    .eq('user_id', currentUser.id)
+    .maybeSingle();
+  if (error) { console.error('Load failed:', error); toast('Load failed: ' + error.message); return; }
+  if (data && data.data) {
+    state = Object.assign(defaultState(), data.data);
+  } else {
+    state = defaultState();
+  }
+}
+
+async function saveState() {
+  if (!currentUser) return;
+  // If a save is already in flight, queue another one
+  if (savePending) { saveQueued = true; return; }
+  savePending = true;
+  try {
+    const { error } = await sb
+      .from('user_data')
+      .upsert({
+        user_id: currentUser.id,
+        data: state,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+    if (error) {
+      console.error('Save failed:', error);
+      toast('Save failed: ' + error.message);
+    }
+  } finally {
+    savePending = false;
+    if (saveQueued) {
+      saveQueued = false;
+      saveState();
+    }
+  }
+}
+
+// ============== HELPERS ==============
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function todayISO() { return new Date().toISOString().slice(0,10); }
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function fmtDateLong(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function fmtTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+function activeStack() { return state.stacks.find(s => s.id === state.activeStackId); }
+function tagClass(t) {
+  return ['healing','glp1','gh','cognitive','metabolic'].includes(t) ? t : '';
+}
+function tagLabel(t) {
+  return { healing:'Healing', glp1:'GLP-1', gh:'GH Secretagogue', cognitive:'Cognitive', metabolic:'Metabolic' }[t] || (t || '—');
+}
+function dayOfStack(stack) {
+  const start = new Date(stack.startDate);
+  const now = new Date();
+  return Math.floor((now - start) / (1000*60*60*24)) + 1;
+}
+function calcStreak() {
+  // Count consecutive days backwards from today with at least one event
+  const events = [...state.doses, ...state.notes, ...state.checkins];
+  if (!events.length) return 0;
+  const dates = new Set(events.map(e => (e.timestamp || e.date || '').slice(0,10)));
+  let streak = 0;
+  let d = new Date();
+  while (dates.has(d.toISOString().slice(0,10))) {
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+function dosesThisWeekByCompound(compoundId) {
+  // Returns array of 7 booleans: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+  const today = new Date();
+  const todayDay = today.getDay() === 0 ? 6 : today.getDay() - 1; // 0 = Mon
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - todayDay);
+  weekStart.setHours(0,0,0,0);
+  const dosesByDay = [false,false,false,false,false,false,false];
+  state.doses.forEach(d => {
+    if (d.compoundId !== compoundId) return;
+    const t = new Date(d.timestamp);
+    if (t < weekStart) return;
+    const dayIdx = t.getDay() === 0 ? 6 : t.getDay() - 1;
+    dosesByDay[dayIdx] = true;
+  });
+  return dosesByDay;
+}
+
+// ============== TAB SWITCHING ==============
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === name);
+  });
+  ['today','stack','history','metrics','settings'].forEach(n => {
+    document.getElementById('tab-' + n).classList.toggle('hidden', n !== name);
+  });
+  if (name === 'history') renderHistory();
+  if (name === 'metrics') renderMetrics();
+  if (name === 'stack') renderStacksTab();
+  if (name === 'settings') renderSettings();
+}
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+// ============== TODAY TAB ==============
+function renderToday() {
+  const now = new Date();
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Good morning, Michael' : hour < 18 ? 'Good afternoon, Michael' : 'Good evening, Michael';
+  document.getElementById('today-greeting').textContent = greeting;
+  document.getElementById('today-date-line').textContent = fmtDateLong(now.toISOString());
+
+  // Streak
+  const streak = calcStreak();
+  if (streak > 0) {
+    document.getElementById('header-streak').style.display = 'inline-flex';
+    document.getElementById('streak-text').innerHTML = `STREAK · <strong style="color: var(--text); font-weight: 600;">${streak} day${streak===1?'':'s'}</strong>`;
+  } else {
+    document.getElementById('header-streak').style.display = 'none';
+  }
+
+  const stack = activeStack();
+  const subtitle = document.getElementById('today-subtitle');
+  if (stack) {
+    const day = dayOfStack(stack);
+    const protocolList = state.doses.filter(d => (d.timestamp || '').slice(0,10) === todayISO()).length;
+    subtitle.innerHTML = `Day <strong style="color: var(--text);">${day}</strong>${stack.duration ? ` of ${stack.duration}` : ''} · ${stack.name} · ${protocolList} dose${protocolList===1?'':'s'} logged today`;
+  } else {
+    subtitle.innerHTML = `No active stack. <button onclick="openNewStack()" style="color: var(--accent); text-decoration: underline; background: none; border: none; cursor: pointer; font-size: 14px;">Create one</button> to start tracking.`;
+  }
+
+  renderTodayMetrics();
+  renderTodayProtocol();
+  renderTodayStack();
+  renderCheckinPanel();
+  renderTodayNotes();
+}
+
+function renderTodayMetrics() {
+  const row = document.getElementById('today-metric-row');
+  const recent = state.checkins.slice(-30);
+  if (recent.length === 0) { row.innerHTML = ''; return; }
+  const last = recent[recent.length - 1];
+  const prevWeek = recent.slice(-14, -7);
+  const lastWeek = recent.slice(-7);
+  const avg = (arr, k) => arr.length ? (arr.reduce((s,x) => s + (x[k] || 0), 0) / arr.filter(x => x[k]).length) : 0;
+
+  function metric(label, key, value, unit) {
+    const lw = avg(lastWeek, key);
+    const pw = avg(prevWeek, key);
+    const delta = pw > 0 ? Math.round(((lw - pw) / pw) * 100) : 0;
+    const deltaText = delta === 0 ? 'stable' : (delta > 0 ? `+${delta}%` : `${delta}%`);
+    const deltaClass = delta === 0 ? 'neutral' : '';
+    return `
+      <div class="panel p-5">
+        <div class="flex items-start justify-between mb-3">
+          <div class="text-[11px] mono uppercase tracking-widest" style="color: var(--muted-2);">${label}</div>
+          <span class="badge ${deltaClass === 'neutral' ? '' : 'due'}">${deltaText}</span>
+        </div>
+        <div class="flex items-baseline gap-1.5">
+          <span class="text-3xl font-bold" style="letter-spacing: -0.02em;">${value || '—'}</span>
+          <span class="text-sm muted-2">${unit}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  row.innerHTML = `
+    ${metric('Energy', 'energy', last.energy, '/10')}
+    ${metric('Sleep', 'sleep', last.sleep, '/10')}
+    ${metric('Mood', 'mood', last.mood, '/10')}
+    ${metric('Weight', 'weight', last.weight, 'lb')}
+  `;
+}
+
+function renderTodayProtocol() {
+  const stack = activeStack();
+  const list = document.getElementById('today-protocol-list');
+  if (!stack || !stack.compounds || stack.compounds.length === 0) {
+    list.innerHTML = `<div class="empty-state" style="padding: 30px 20px;">
+      <p>No compounds in your active stack. Add some to see today's protocol.</p>
+      <button class="btn-primary" onclick="openAddCompound()">+ Add compound</button>
+    </div>`;
+    return;
+  }
+
+  // Build today's expected doses based on frequency
+  const todayDoses = [];
+  stack.compounds.forEach(c => {
+    const todaysFreq = expectedDosesToday(c);
+    todaysFreq.forEach(t => {
+      const wasLogged = state.doses.some(d =>
+        d.compoundId === c.id &&
+        (d.timestamp || '').slice(0,10) === todayISO() &&
+        (!t.time || matchTime(d.timestamp, t.time))
+      );
+      todayDoses.push({
+        compound: c, time: t.time || '—',
+        wasLogged, slotKey: t.time || 'any'
+      });
+    });
+  });
+
+  // Sort by time
+  todayDoses.sort((a,b) => (a.time || 'zz').localeCompare(b.time || 'zz'));
+
+  if (todayDoses.length === 0) {
+    list.innerHTML = `<p class="muted text-sm">No doses scheduled for today based on stack frequency.</p>`;
+    return;
+  }
+
+  list.innerHTML = todayDoses.map((p, idx) => {
+    if (p.wasLogged) {
+      return `
+        <div class="flex items-start gap-3 py-2">
+          <div class="text-xs mono pt-0.5" style="color: var(--muted-2); min-width: 56px;">${p.time}</div>
+          <div class="flex-1">
+            <div class="logged-text text-sm font-medium">${p.compound.name} · ${p.compound.dose}</div>
+            <div class="logged-confirm mt-1">✓ Logged today</div>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="flex items-start gap-3 py-2">
+        <div class="text-xs mono pt-0.5" style="color: var(--muted-2); min-width: 56px;">${p.time}</div>
+        <div class="flex-1">
+          <div class="text-sm font-medium">${p.compound.name} · ${p.compound.dose}</div>
+          <div class="text-xs mt-0.5" style="color: var(--muted-2);">${p.compound.route} · ${p.compound.frequency}</div>
+        </div>
+        <button class="btn-log" onclick="quickLog('${p.compound.id}', '${p.time}')">Log</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function expectedDosesToday(compound) {
+  // Returns array of { time } for today based on frequency
+  const dueTime = compound.due || null;
+  const f = compound.frequency;
+  if (f === '2× daily') return [{ time: dueTime || '8:00 AM' }, { time: '8:00 PM' }];
+  if (f === 'Daily') return [{ time: dueTime || '—' }];
+  if (f === 'Nightly') return [{ time: dueTime || '10:00 PM' }];
+  if (f === 'Every other day') {
+    // Show only on alternating days from start
+    const stack = activeStack();
+    if (!stack) return [];
+    const day = dayOfStack(stack);
+    return day % 2 === 1 ? [{ time: dueTime || '—' }] : [];
+  }
+  if (f === '2× weekly') {
+    // Mon + Thu by default
+    const dow = new Date().getDay(); // 0=Sun..6=Sat
+    return [1, 4].includes(dow) ? [{ time: dueTime || '—' }] : [];
+  }
+  if (f === '1× weekly') {
+    const dow = new Date().getDay();
+    return dow === 1 ? [{ time: dueTime || '—' }] : [];
+  }
+  if (f === 'As needed') return [];
+  return [{ time: dueTime || '—' }];
+}
+function matchTime(timestamp, slotTime) {
+  // Loose match — within ±3 hours of slot
+  if (!slotTime || slotTime === '—') return true;
+  return true; // for simplicity, any same-day dose for that compound counts
+}
+
+function renderTodayStack() {
+  const stack = activeStack();
+  const list = document.getElementById('today-stack-list');
+  if (!stack || !stack.compounds || stack.compounds.length === 0) {
+    list.innerHTML = `<p class="muted text-sm">Add compounds to your stack to see them here.</p>`;
+    return;
+  }
+  const dayLabels = ['M','T','W','T','F','S','S'];
+  const jsDay = new Date().getDay();
+  const todayIdx = jsDay === 0 ? 6 : jsDay - 1;
+
+  list.innerHTML = stack.compounds.map(c => {
+    const week = dosesThisWeekByCompound(c.id);
+    const dots = week.map((filled, i) => `
+      <div class="dose-day ${i === todayIdx ? 'today' : ''}">
+        <span class="dose-day-label">${dayLabels[i]}</span>
+        <span class="dose-dot ${filled ? 'filled' : ''}"></span>
+      </div>
+    `).join('');
+    const dueBadge = c.due ? `<span class="badge due">Due ${c.due}</span>` : '';
+    return `
+      <div class="panel-2 p-4">
+        <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <span class="font-semibold text-[15px]">${c.name}</span>
+            ${c.tag ? `<span class="badge ${tagClass(c.tag)}">${tagLabel(c.tag)}</span>` : ''}
+            ${dueBadge}
+          </div>
+          <div class="dose-week">${dots}</div>
+        </div>
+        <div class="text-xs mono mb-2" style="color: var(--muted);">
+          ${c.dose} · ${c.route} · ${c.frequency}
+        </div>
+        ${c.goal ? `<div class="text-xs mb-1" style="color: var(--muted-2);">Goal: ${c.goal}</div>` : ''}
+        ${c.vendor ? `<div class="text-xs" style="color: var(--muted-2);">Vendor: ${c.vendor}${c.purity ? ` (${c.purity}% pure)` : ''}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCheckinPanel() {
+  const today = todayISO();
+  const todayCheckin = state.checkins.find(c => (c.date || '').slice(0,10) === today);
+  const status = document.getElementById('checkin-status');
+  const btn = document.getElementById('checkin-btn');
+  if (todayCheckin) {
+    status.innerHTML = `<span class="accent-text">✓ Logged today</span> · Energy ${todayCheckin.energy} · Sleep ${todayCheckin.sleep} · Mood ${todayCheckin.mood}${todayCheckin.weight ? ` · ${todayCheckin.weight} lb` : ''}`;
+    btn.textContent = 'Update today';
+  } else {
+    status.textContent = 'Not logged yet today.';
+    btn.innerHTML = '+ Quick check-in';
+  }
+}
+
+function renderTodayNotes() {
+  const list = document.getElementById('today-notes-list');
+  const recent = [...state.notes].slice(-5).reverse();
+  if (recent.length === 0) {
+    list.innerHTML = `<p class="muted text-sm">No notes yet.</p>`;
+    return;
+  }
+  list.innerHTML = recent.map(n => `
+    <div class="flex gap-3" style="border-left: 2px solid var(--accent-dim); padding-left: 12px;">
+      <div class="flex-1">
+        <div class="text-[11px] mono mb-1.5" style="color: var(--muted-2); letter-spacing: 0.05em;">${fmtDate(n.date)}</div>
+        <div class="text-sm leading-relaxed" style="color: var(--muted);">${escapeHtml(n.text)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============== STACK TAB ==============
+function renderStacksTab() {
+  const container = document.getElementById('stacks-container');
+  if (state.stacks.length === 0) {
+    container.innerHTML = `
+      <div class="panel p-8">
+        <div class="empty-state">
+          <h3>No stacks yet</h3>
+          <p>Create your first stack to start tracking your protocol.</p>
+          <button class="btn-primary" onclick="openNewStack()">+ Create stack</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  container.innerHTML = state.stacks.map(s => {
+    const isActive = s.id === state.activeStackId;
+    const day = s.startDate ? dayOfStack(s) : '?';
+    return `
+      <div class="panel p-6">
+        <div class="flex items-start justify-between mb-4 flex-wrap gap-3">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <h2 class="text-lg font-bold tracking-tight">${escapeHtml(s.name)}</h2>
+              ${isActive ? '<span class="badge due">Active</span>' : ''}
+            </div>
+            <p class="text-xs muted">${s.goal ? escapeHtml(s.goal) + ' · ' : ''}Day ${day}${s.duration ? ` of ${s.duration}` : ''}${s.cycle ? ` · Cycle ${escapeHtml(s.cycle)}` : ''}</p>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            ${!isActive ? `<button class="btn-small" onclick="setActiveStack('${s.id}')">Set active</button>` : ''}
+            <button class="btn-small" onclick="editStack('${s.id}')">Edit</button>
+            <button class="btn-small" onclick="openAddCompoundFor('${s.id}')">+ Compound</button>
+            <button class="btn-danger" onclick="confirmDeleteStack('${s.id}')">Delete</button>
+          </div>
+        </div>
+        <div class="space-y-2">
+          ${(s.compounds || []).map(c => `
+            <div class="panel-2 p-3 flex items-start justify-between gap-3 flex-wrap">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  <span class="font-semibold text-sm">${escapeHtml(c.name)}</span>
+                  ${c.tag ? `<span class="badge ${tagClass(c.tag)}">${tagLabel(c.tag)}</span>` : ''}
+                </div>
+                <div class="text-xs mono" style="color: var(--muted);">${c.dose} · ${c.route} · ${c.frequency}${c.due ? ` · Due ${c.due}` : ''}</div>
+                ${c.goal ? `<div class="text-xs mt-1" style="color: var(--muted-2);">${escapeHtml(c.goal)}</div>` : ''}
+              </div>
+              <div class="flex gap-1">
+                <button class="btn-small" onclick="editCompound('${s.id}', '${c.id}')">Edit</button>
+                <button class="btn-danger" onclick="confirmDeleteCompound('${s.id}', '${c.id}')">×</button>
+              </div>
+            </div>
+          `).join('') || '<p class="muted text-sm">No compounds in this stack.</p>'}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function setActiveStack(id) {
+  state.activeStackId = id;
+  saveState();
+  renderStacksTab();
+  renderToday();
+  toast('Active stack changed');
+}
+function confirmDeleteStack(id) {
+  const s = state.stacks.find(s => s.id === id);
+  if (!confirm(`Delete stack "${s.name}"? This won't delete logged doses, but you'll lose the stack definition.`)) return;
+  state.stacks = state.stacks.filter(s => s.id !== id);
+  if (state.activeStackId === id) {
+    state.activeStackId = state.stacks[0]?.id || null;
+  }
+  saveState();
+  renderStacksTab();
+  renderToday();
+  toast('Stack deleted');
+}
+function confirmDeleteCompound(stackId, compoundId) {
+  if (!confirm('Remove this compound from the stack?')) return;
+  const s = state.stacks.find(s => s.id === stackId);
+  if (!s) return;
+  s.compounds = (s.compounds || []).filter(c => c.id !== compoundId);
+  saveState();
+  renderStacksTab();
+  renderToday();
+  toast('Compound removed');
+}
+
+// ============== HISTORY TAB ==============
+function renderHistory() {
+  const filter = document.getElementById('history-filter').value;
+  const events = [];
+  if (filter === 'all' || filter === 'dose') {
+    state.doses.forEach(d => events.push({
+      type: 'dose', timestamp: d.timestamp,
+      content: `<strong>${escapeHtml(d.compound)}</strong> · ${d.dose}${d.route ? ' · ' + d.route : ''}${d.site && d.site !== 'N/A' ? ' (' + d.site + ')' : ''}`,
+      meta: d.note ? `"${escapeHtml(d.note)}"` : '',
+    }));
+  }
+  if (filter === 'all' || filter === 'note') {
+    state.notes.forEach(n => events.push({
+      type: 'note', timestamp: n.date,
+      content: escapeHtml(n.text), meta: '',
+    }));
+  }
+  if (filter === 'all' || filter === 'metric') {
+    state.checkins.forEach(c => events.push({
+      type: 'metric', timestamp: c.date,
+      content: `Energy ${c.energy} · Sleep ${c.sleep} · Mood ${c.mood}${c.weight ? ' · ' + c.weight + ' lb' : ''}`,
+      meta: c.note ? `"${escapeHtml(c.note)}"` : '',
+    }));
+  }
+  events.sort((a,b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+
+  const list = document.getElementById('history-list');
+  if (events.length === 0) {
+    list.innerHTML = `<div class="empty-state"><h3>Nothing yet</h3><p>Log a dose, add a note, or do a check-in to start your history.</p></div>`;
+    return;
+  }
+  list.innerHTML = events.map(e => `
+    <div class="history-row">
+      <div class="history-date">${fmtDate(e.timestamp)} ${e.type === 'dose' ? fmtTime(e.timestamp) : ''}</div>
+      <div class="history-type ${e.type}">${e.type}</div>
+      <div>
+        <div class="history-content">${e.content}</div>
+        ${e.meta ? `<div class="history-meta">${e.meta}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============== METRICS TAB ==============
+function renderMetrics() {
+  const grid = document.getElementById('metrics-grid');
+  const recent = state.checkins.slice(-30);
+  if (recent.length === 0) {
+    grid.innerHTML = `<div class="panel p-8" style="grid-column: 1/-1;">
+      <div class="empty-state"><h3>No check-ins yet</h3><p>Do a daily check-in to start seeing trends here.</p>
+      <button class="btn-primary" onclick="openCheckin()">+ First check-in</button></div>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = `
+    ${chartCard('Energy', 'energy', '/10', recent)}
+    ${chartCard('Sleep', 'sleep', '/10', recent)}
+    ${chartCard('Mood', 'mood', '/10', recent)}
+    ${chartCard('Weight', 'weight', 'lb', recent)}
+  `;
+}
+function chartCard(label, key, unit, data) {
+  const points = data.filter(d => d[key] != null);
+  if (points.length === 0) return `
+    <div class="panel p-6">
+      <div class="text-[11px] mono uppercase tracking-widest mb-3" style="color: var(--muted-2);">${label}</div>
+      <p class="muted text-sm">No ${label.toLowerCase()} data yet.</p>
+    </div>
+  `;
+  const values = points.map(p => p[key]);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const w = 100, h = 60;
+  const stepX = points.length > 1 ? w / (points.length - 1) : 0;
+  const path = points.map((p, i) => {
+    const x = i * stepX;
+    const y = h - ((p[key] - min) / range) * h;
+    return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+  }).join(' ');
+  const last = values[values.length - 1];
+  const first = values[0];
+  const delta = (last - first).toFixed(1);
+  const deltaText = delta > 0 ? `+${delta}` : delta;
+
+  return `
+    <div class="panel p-6">
+      <div class="flex items-start justify-between mb-3">
+        <div class="text-[11px] mono uppercase tracking-widest" style="color: var(--muted-2);">${label}</div>
+        <span class="badge ${delta == 0 ? '' : 'due'}">${deltaText} (${points.length} day${points.length===1?'':'s'})</span>
+      </div>
+      <div class="flex items-baseline gap-1.5 mb-4">
+        <span class="text-3xl font-bold" style="letter-spacing: -0.02em;">${last}</span>
+        <span class="text-sm muted-2">${unit}</span>
+      </div>
+      <svg width="100%" height="80" viewBox="0 0 ${w} ${h+10}" preserveAspectRatio="none">
+        <path d="${path}" fill="none" stroke="#34d399" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        ${points.map((p, i) => {
+          const x = i * stepX;
+          const y = h - ((p[key] - min) / range) * h;
+          return `<circle cx="${x}" cy="${y}" r="1.8" fill="#34d399"/>`;
+        }).join('')}
+      </svg>
+      <div class="flex justify-between text-[10px] mono mt-2" style="color: var(--muted-2);">
+        <span>${fmtDate(points[0].date)}</span>
+        <span>${fmtDate(points[points.length-1].date)}</span>
+      </div>
+    </div>
+  `;
+}
+
+// ============== SETTINGS TAB ==============
+function renderSettings() {
+  document.getElementById('current-url').textContent = window.location.pathname;
+  document.getElementById('account-email').textContent = currentUser?.email || '—';
+}
+
+// ============== EXPORT / IMPORT ==============
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dateStr = new Date().toISOString().slice(0,10);
+  a.download = `logmystack-backup-${dateStr}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded');
+}
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.stacks && !imported.doses && !imported.notes) {
+        toast('Invalid backup file'); return;
+      }
+      if (!confirm('Import will REPLACE all current data. Continue?')) return;
+      state = Object.assign(defaultState(), imported);
+      saveState();
+      renderToday(); renderStacksTab(); renderHistory(); renderMetrics();
+      toast('Data imported');
+    } catch (err) {
+      toast('Error reading file');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+function confirmClearAll() {
+  if (!confirm('PERMANENTLY DELETE all data from your account? Export a backup first if you want to keep it.')) return;
+  if (!confirm('Last chance — really delete everything?')) return;
+  state = defaultState();
+  saveState();
+  renderToday(); renderStacksTab(); renderHistory(); renderMetrics(); renderSettings();
+  toast('All data cleared');
+}
+
+// ============== MODALS ==============
+function openModal(id) {
+  document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  document.getElementById('modal-backdrop').classList.add('active');
+}
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('active');
+}
+function closeModalOnBackdrop(e) {
+  if (e.target.id === 'modal-backdrop') closeModal();
+}
+
+// LOG DOSE
+function openLogDose(preselectId) {
+  const select = document.getElementById('log-compound');
+  const stack = activeStack();
+  if (!stack || !stack.compounds || stack.compounds.length === 0) {
+    toast('Add a compound to your stack first');
+    return;
+  }
+  select.innerHTML = stack.compounds.map(c =>
+    `<option value="${c.id}" ${c.id === preselectId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
+  ).join('');
+  // Default dose / unit from compound
+  const setDefaults = (cId) => {
+    const c = stack.compounds.find(x => x.id === cId);
+    if (!c) return;
+    const m = (c.dose || '').match(/^([\d.]+)\s*(\w+)?/);
+    if (m) {
+      document.getElementById('log-dose').value = m[1];
+      if (m[2]) {
+        const unitSel = document.getElementById('log-unit');
+        for (const o of unitSel.options) if (o.value === m[2]) { unitSel.value = m[2]; break; }
+      }
+    }
+    if (c.route) {
+      const map = { SubQ: 'Subcutaneous', IM: 'Intramuscular', Oral: 'Oral', Nasal: 'Nasal' };
+      const target = map[c.route] || c.route;
+      const routeSel = document.getElementById('log-route');
+      for (const o of routeSel.options) if (o.value === target) { routeSel.value = target; break; }
+    }
+  };
+  setDefaults(select.value);
+  select.onchange = () => setDefaults(select.value);
+  document.getElementById('log-note').value = '';
+  openModal('modal-log-dose');
+}
+function quickLog(compoundId, time) {
+  openLogDose(compoundId);
+}
+function submitLogDose() {
+  const compoundId = document.getElementById('log-compound').value;
+  const stack = activeStack();
+  const compound = stack?.compounds.find(c => c.id === compoundId);
+  if (!compound) { toast('Compound not found'); return; }
+  const dose = document.getElementById('log-dose').value.trim();
+  const unit = document.getElementById('log-unit').value;
+  if (!dose) { toast('Enter a dose'); return; }
+  state.doses.push({
+    id: uid(), timestamp: new Date().toISOString(),
+    compoundId, compound: compound.name,
+    dose: `${dose} ${unit}`,
+    route: document.getElementById('log-route').value,
+    site: document.getElementById('log-site').value,
+    note: document.getElementById('log-note').value.trim(),
+  });
+  saveState();
+  closeModal();
+  renderToday();
+  toast(`${compound.name} logged ✓`);
+}
+
+// NEW / EDIT STACK
+function openNewStack() {
+  document.getElementById('stack-modal-title').textContent = 'Start a new stack';
+  document.getElementById('stack-submit-btn').textContent = 'Create stack';
+  document.getElementById('edit-stack-id').value = '';
+  document.getElementById('new-stack-name').value = '';
+  document.getElementById('new-stack-goal').value = '';
+  document.getElementById('new-stack-duration').value = '';
+  document.getElementById('new-stack-cycle').value = '';
+  document.getElementById('new-stack-startdate').value = todayISO();
+  openModal('modal-new-stack');
+}
+function editStack(id) {
+  const s = state.stacks.find(s => s.id === id);
+  if (!s) return;
+  document.getElementById('stack-modal-title').textContent = 'Edit stack';
+  document.getElementById('stack-submit-btn').textContent = 'Save changes';
+  document.getElementById('edit-stack-id').value = id;
+  document.getElementById('new-stack-name').value = s.name || '';
+  document.getElementById('new-stack-goal').value = s.goal || '';
+  document.getElementById('new-stack-duration').value = s.duration || '';
+  document.getElementById('new-stack-cycle').value = s.cycle || '';
+  document.getElementById('new-stack-startdate').value = s.startDate || todayISO();
+  openModal('modal-new-stack');
+}
+function submitNewStack() {
+  const id = document.getElementById('edit-stack-id').value;
+  const data = {
+    name: document.getElementById('new-stack-name').value.trim(),
+    goal: document.getElementById('new-stack-goal').value.trim(),
+    duration: parseInt(document.getElementById('new-stack-duration').value) || null,
+    cycle: document.getElementById('new-stack-cycle').value.trim(),
+    startDate: document.getElementById('new-stack-startdate').value || todayISO(),
+  };
+  if (!data.name) { toast('Stack name required'); return; }
+  if (id) {
+    const s = state.stacks.find(s => s.id === id);
+    Object.assign(s, data);
+  } else {
+    const newStack = { id: uid(), ...data, compounds: [] };
+    state.stacks.push(newStack);
+    if (!state.activeStackId) state.activeStackId = newStack.id;
+  }
+  saveState();
+  closeModal();
+  renderStacksTab(); renderToday();
+  toast(id ? 'Stack updated' : 'Stack created');
+}
+
+// ADD / EDIT COMPOUND
+let _addCompoundTargetStack = null;
+function openAddCompound() {
+  if (!state.activeStackId) {
+    if (state.stacks.length === 0) {
+      toast('Create a stack first');
+      openNewStack();
+      return;
+    }
+    state.activeStackId = state.stacks[0].id;
+  }
+  openAddCompoundFor(state.activeStackId);
+}
+function openAddCompoundFor(stackId) {
+  _addCompoundTargetStack = stackId;
+  document.getElementById('compound-modal-title').textContent = 'Add compound';
+  document.getElementById('compound-submit-btn').textContent = 'Add compound';
+  document.getElementById('edit-compound-id').value = '';
+  ['new-compound-name','new-compound-dose','new-compound-due','new-compound-goal','new-compound-vendor','new-compound-purity'].forEach(id => document.getElementById(id).value = '');
+  openModal('modal-add-compound');
+}
+function editCompound(stackId, compoundId) {
+  _addCompoundTargetStack = stackId;
+  const s = state.stacks.find(s => s.id === stackId);
+  const c = s?.compounds.find(c => c.id === compoundId);
+  if (!c) return;
+  document.getElementById('compound-modal-title').textContent = 'Edit compound';
+  document.getElementById('compound-submit-btn').textContent = 'Save changes';
+  document.getElementById('edit-compound-id').value = compoundId;
+  document.getElementById('new-compound-name').value = c.name || '';
+  document.getElementById('new-compound-tag').value = c.tag || '';
+  document.getElementById('new-compound-dose').value = c.dose || '';
+  document.getElementById('new-compound-freq').value = c.frequency || 'Daily';
+  document.getElementById('new-compound-route').value = c.route || 'SubQ';
+  document.getElementById('new-compound-due').value = c.due || '';
+  document.getElementById('new-compound-goal').value = c.goal || '';
+  document.getElementById('new-compound-vendor').value = c.vendor || '';
+  document.getElementById('new-compound-purity').value = c.purity || '';
+  openModal('modal-add-compound');
+}
+function submitAddCompound() {
+  const id = document.getElementById('edit-compound-id').value;
+  const data = {
+    name: document.getElementById('new-compound-name').value.trim(),
+    tag: document.getElementById('new-compound-tag').value,
+    dose: document.getElementById('new-compound-dose').value.trim(),
+    frequency: document.getElementById('new-compound-freq').value,
+    route: document.getElementById('new-compound-route').value,
+    due: document.getElementById('new-compound-due').value.trim(),
+    goal: document.getElementById('new-compound-goal').value.trim(),
+    vendor: document.getElementById('new-compound-vendor').value.trim(),
+    purity: document.getElementById('new-compound-purity').value.trim(),
+  };
+  if (!data.name || !data.dose) { toast('Name and dose required'); return; }
+  const s = state.stacks.find(s => s.id === _addCompoundTargetStack);
+  if (!s) { toast('Stack not found'); return; }
+  s.compounds = s.compounds || [];
+  if (id) {
+    const c = s.compounds.find(c => c.id === id);
+    Object.assign(c, data);
+  } else {
+    s.compounds.push({ id: uid(), ...data });
+  }
+  saveState();
+  closeModal();
+  renderStacksTab(); renderToday();
+  toast(id ? 'Compound updated' : `${data.name} added`);
+}
+
+// ADD NOTE
+function openAddNote() {
+  document.getElementById('new-note-text').value = '';
+  openModal('modal-add-note');
+}
+function submitAddNote() {
+  const text = document.getElementById('new-note-text').value.trim();
+  if (!text) { toast('Enter a note'); return; }
+  state.notes.push({ id: uid(), date: new Date().toISOString(), text });
+  saveState();
+  closeModal();
+  renderToday(); renderHistory();
+  toast('Note saved');
+}
+
+// CHECK-IN
+function openCheckin() {
+  const today = todayISO();
+  const existing = state.checkins.find(c => (c.date || '').slice(0,10) === today);
+  if (existing) {
+    document.getElementById('ci-energy').value = existing.energy;
+    document.getElementById('ci-energy-v').textContent = existing.energy;
+    document.getElementById('ci-sleep').value = existing.sleep;
+    document.getElementById('ci-sleep-v').textContent = existing.sleep;
+    document.getElementById('ci-mood').value = existing.mood;
+    document.getElementById('ci-mood-v').textContent = existing.mood;
+    document.getElementById('ci-weight').value = existing.weight || '';
+    document.getElementById('ci-note').value = existing.note || '';
+  } else {
+    document.getElementById('ci-energy').value = 7; document.getElementById('ci-energy-v').textContent = 7;
+    document.getElementById('ci-sleep').value = 7; document.getElementById('ci-sleep-v').textContent = 7;
+    document.getElementById('ci-mood').value = 7; document.getElementById('ci-mood-v').textContent = 7;
+    document.getElementById('ci-weight').value = '';
+    document.getElementById('ci-note').value = '';
+  }
+  openModal('modal-checkin');
+}
+function submitCheckin() {
+  const today = todayISO();
+  const data = {
+    date: new Date().toISOString(),
+    energy: parseFloat(document.getElementById('ci-energy').value),
+    sleep: parseFloat(document.getElementById('ci-sleep').value),
+    mood: parseFloat(document.getElementById('ci-mood').value),
+    weight: parseFloat(document.getElementById('ci-weight').value) || null,
+    note: document.getElementById('ci-note').value.trim(),
+  };
+  const existing = state.checkins.findIndex(c => (c.date || '').slice(0,10) === today);
+  if (existing >= 0) {
+    state.checkins[existing] = { ...state.checkins[existing], ...data };
+  } else {
+    state.checkins.push({ id: uid(), ...data });
+  }
+  saveState();
+  closeModal();
+  renderToday(); renderHistory(); renderMetrics();
+  toast('Check-in saved');
+}
+
+// ============== UTILS ==============
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[c]);
+}
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ============== AUTH ==============
+function showAuthGate() {
+  document.getElementById('auth-gate').style.display = 'flex';
+  document.getElementById('auth-form-view').classList.remove('hidden');
+  document.getElementById('auth-sent-view').classList.add('hidden');
+  document.getElementById('auth-loading-view').classList.add('hidden');
+}
+function hideAuthGate() {
+  document.getElementById('auth-gate').style.display = 'none';
+}
+function showAuthLoading() {
+  document.getElementById('auth-form-view').classList.add('hidden');
+  document.getElementById('auth-sent-view').classList.add('hidden');
+  document.getElementById('auth-loading-view').classList.remove('hidden');
+}
+function resetAuthForm() {
+  document.getElementById('auth-form-view').classList.remove('hidden');
+  document.getElementById('auth-sent-view').classList.add('hidden');
+}
+
+async function handleSendMagicLink() {
+  const email = document.getElementById('auth-email').value.trim();
+  if (!email) { toast('Enter an email'); return; }
+  const btn = document.getElementById('auth-send-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+  btn.disabled = false;
+  btn.textContent = 'Send magic link';
+  if (error) {
+    toast('Error: ' + error.message);
+    return;
+  }
+  document.getElementById('auth-sent-email').textContent = email;
+  document.getElementById('auth-form-view').classList.add('hidden');
+  document.getElementById('auth-sent-view').classList.remove('hidden');
+}
+
+async function signOut() {
+  if (!confirm('Sign out? Your data stays in the cloud.')) return;
+  await sb.auth.signOut();
+  currentUser = null;
+  state = defaultState();
+  showAuthGate();
+}
+
+// ============== INIT ==============
+async function init() {
+  // Check existing session (also handles magic link callback in URL hash)
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    await loadStateFromDb();
+    hideAuthGate();
+    renderToday();
+  } else {
+    showAuthGate();
+  }
+
+  // Listen for sign-in events (from magic link click)
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      if (currentUser?.id === session.user.id) return; // already loaded
+      currentUser = session.user;
+      showAuthLoading();
+      await loadStateFromDb();
+      hideAuthGate();
+      renderToday();
+      toast('Signed in as ' + session.user.email);
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      state = defaultState();
+      showAuthGate();
+    }
+  });
+}
+
+init();
+</script>
+
+</body>
+</html>
