@@ -1634,6 +1634,24 @@ async function handleSendMagicLink() {
   if (!email) { toast('Enter an email'); return; }
   const btn = document.getElementById('auth-send-btn');
   btn.disabled = true;
+  btn.textContent = 'Checking...';
+
+  // Pre-check the beta allowlist so we don't send dead magic links
+  const { data: allowed, error: checkErr } = await sb.rpc('is_email_allowed', { check_email: email });
+  if (checkErr) {
+    btn.disabled = false; btn.textContent = 'Send magic link';
+    toast('Error: ' + checkErr.message);
+    return;
+  }
+  if (!allowed) {
+    btn.disabled = false; btn.textContent = 'Send magic link';
+    document.getElementById('auth-email').style.borderColor = 'rgba(248,113,113,0.5)';
+    toast("This email isn't on the beta allowlist. Join the waitlist at logmystack.com.");
+    if (window.posthog) posthog.capture('beta_signin_denied', { email });
+    return;
+  }
+  document.getElementById('auth-email').style.borderColor = '';
+
   btn.textContent = 'Sending...';
   const { error } = await sb.auth.signInWithOtp({
     email,
@@ -1645,6 +1663,7 @@ async function handleSendMagicLink() {
     toast('Error: ' + error.message);
     return;
   }
+  if (window.posthog) posthog.capture('beta_signin_sent', { email });
   document.getElementById('auth-sent-email').textContent = email;
   document.getElementById('auth-form-view').classList.add('hidden');
   document.getElementById('auth-sent-view').classList.remove('hidden');
