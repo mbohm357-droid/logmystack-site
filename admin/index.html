@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · LogMyStack</title>
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg:#0a0a0a; --panel:#111; --panel-2:#161616; --border:#262626;
+    --text:#fafafa; --muted:#a3a3a3; --muted-2:#737373;
+    --accent:#34d399; --warn:#fbbf24; --danger:#f87171;
+  }
+  * { font-family: 'Inter', -apple-system, sans-serif; box-sizing: border-box; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  html, body { background: #0a0a0a !important; color: var(--text); margin: 0; min-height: 100vh; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; }
+  .panel-2 { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; }
+  .muted { color: var(--muted); } .muted-2 { color: var(--muted-2); }
+  .accent-text { color: var(--accent); } .warn-text { color: var(--warn); }
+  .input-field {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    padding: 9px 12px; border-radius: 8px; font-size: 13px; width: 100%;
+  }
+  .input-field:focus { outline: none; border-color: rgba(52,211,153,0.5); }
+  .btn-primary {
+    background: var(--accent); color: #052e1a; font-weight: 600;
+    padding: 8px 14px; border-radius: 8px; font-size: 13px;
+    border: none; cursor: pointer;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-small {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    padding: 5px 10px; border-radius: 7px; font-size: 11.5px;
+    cursor: pointer; font-family: 'JetBrains Mono', monospace;
+  }
+  .btn-small:hover { border-color: #444; }
+  .btn-danger { color: var(--danger); border-color: rgba(248,113,113,0.3); background: transparent; }
+  .btn-danger:hover { background: rgba(248,113,113,0.06); }
+  .pill {
+    display: inline-flex; padding: 2px 8px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+  }
+  .pill.green { color: var(--accent); background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25); }
+  .pill.amber { color: var(--warn); background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.25); }
+  .pill.gray  { color: var(--muted); background: var(--panel-2); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  th { color: var(--muted-2); font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .stat-num { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-label { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.08em; }
+</style>
+</head>
+<body>
+
+<!-- Auth gate -->
+<div id="auth-gate" style="position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px;">
+  <div class="panel p-8" style="max-width: 380px; width: 100%;">
+    <div class="text-xs mono uppercase tracking-widest mb-2" style="color: var(--warn);">● Admin only</div>
+    <h2 class="text-lg font-bold mb-1">Sign in</h2>
+    <p class="text-sm muted mb-5">Use your founder email to access the beta dashboard.</p>
+    <input type="email" class="input-field mb-3" id="auth-email" placeholder="you@email.com" autocomplete="email">
+    <button class="btn-primary w-full" onclick="sendLink()" id="auth-btn" style="justify-content:center;">Send magic link</button>
+    <div id="auth-status" class="text-xs mono mt-3 text-center" style="color: var(--muted-2);"></div>
+  </div>
+</div>
+
+<header style="border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #0a0a0a; z-index: 50;">
+  <div class="mx-auto px-6 py-3 flex items-center justify-between" style="max-width: 1280px;">
+    <div class="flex items-center gap-3">
+      <span class="font-bold tracking-tight">LogMyStack</span>
+      <span class="pill amber">Admin</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-xs mono" style="color: var(--muted-2);" id="me-email"></span>
+      <button class="btn-small" onclick="reload()">Refresh</button>
+      <button class="btn-small btn-danger" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main class="mx-auto px-6 py-8" style="max-width: 1280px;">
+
+  <!-- Stat cards -->
+  <div class="grid md:grid-cols-4 gap-4 mb-8" id="stat-cards"></div>
+
+  <!-- Add to allowlist -->
+  <div class="panel p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-base font-bold tracking-tight">Add to beta allowlist</h2>
+        <p class="text-xs muted mt-1">Email + optional notes (e.g. "Tier A — Kyle Gillett intro"). They'll be able to sign in via magic link.</p>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-12 gap-2">
+      <input type="email" class="input-field md:col-span-4" id="add-email" placeholder="influencer@x.com">
+      <input type="text"  class="input-field md:col-span-7" id="add-notes" placeholder="Notes (optional)">
+      <button class="btn-primary md:col-span-1" onclick="addAllowlist()" style="justify-content:center;">Add</button>
+    </div>
+    <div id="add-status" class="text-xs mono mt-2" style="color: var(--muted-2);"></div>
+  </div>
+
+  <!-- Allowlist table -->
+  <div class="panel p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-base font-bold tracking-tight">Beta allowlist</h2>
+      <div class="text-xs mono" style="color: var(--muted-2);" id="list-count"></div>
+    </div>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Last sign-in</th>
+            <th>Stacks</th>
+            <th>Doses</th>
+            <th>Check-ins</th>
+            <th>Notes</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="list-body">
+          <tr><td colspan="8" class="text-center muted py-6 text-sm">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="text-xs mt-6 mono text-center" style="color: var(--muted-2);">
+    User counts come from each user's cloud row. Last sign-in is approximate (from your auth provider).
+  </p>
+
+</main>
+
+<script>
+const SUPABASE_URL = 'https://axnlmmxkydsrqrshlenz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_XS1xdqyGTMq8uf5GrrEYaQ_YRnD6_XE';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Hard-coded admin emails (only these can use this page even if they sign in)
+const ADMINS = ['mbohm357@gmail.com'];
+
+let me = null;
+
+async function sendLink() {
+  const email = document.getElementById('auth-email').value.trim();
+  if (!email) return;
+  const btn = document.getElementById('auth-btn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
+  btn.disabled = false; btn.textContent = 'Send magic link';
+  document.getElementById('auth-status').textContent = error ? ('Error: ' + error.message) : 'Check your email.';
+}
+
+async function signOut() { await sb.auth.signOut(); location.reload(); }
+
+async function reload() {
+  document.getElementById('list-body').innerHTML = '<tr><td colspan="8" class="text-center muted py-6 text-sm">Loading…</td></tr>';
+  await renderAll();
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return days + 'd ago';
+  return d.toISOString().slice(0,10);
+}
+
+async function fetchAllowlist() {
+  const { data, error } = await sb.from('beta_allowlist').select('*').order('added_at', { ascending: false });
+  if (error) { console.error(error); return []; }
+  return data || [];
+}
+
+async function fetchUserData() {
+  // Fetch all user_data rows the admin can see (RLS must allow this — see SQL notes)
+  const { data, error } = await sb.from('user_data').select('user_id, data, updated_at, user_email');
+  if (error) { console.warn('user_data read error (likely RLS — that\'s fine, just stats hidden):', error.message); return []; }
+  return data || [];
+}
+
+async function addAllowlist() {
+  const email = document.getElementById('add-email').value.trim().toLowerCase();
+  const notes = document.getElementById('add-notes').value.trim();
+  if (!email) return;
+  const status = document.getElementById('add-status');
+  status.textContent = 'Adding…';
+  const { error } = await sb.from('beta_allowlist').insert({ email, notes, added_by: me?.email });
+  if (error) { status.textContent = 'Error: ' + error.message; return; }
+  status.textContent = 'Added ' + email;
+  document.getElementById('add-email').value = '';
+  document.getElementById('add-notes').value = '';
+  await renderAll();
+}
+
+async function removeFromAllowlist(email) {
+  if (!confirm('Remove ' + email + ' from the allowlist? They won\'t be able to sign in (existing data is not deleted).')) return;
+  const { error } = await sb.from('beta_allowlist').delete().eq('email', email);
+  if (error) { alert('Error: ' + error.message); return; }
+  await renderAll();
+}
+
+async function renderAll() {
+  const [allow, userData] = await Promise.all([fetchAllowlist(), fetchUserData()]);
+  const byEmail = {};
+  userData.forEach(r => {
+    const e = (r.user_email || '').toLowerCase();
+    if (e) byEmail[e] = r;
+  });
+
+  // Stats
+  const total = allow.length;
+  const active = allow.filter(a => byEmail[a.email.toLowerCase()]).length;
+  const totalDoses = userData.reduce((s, r) => s + ((r.data?.doses || []).length), 0);
+  const totalCheckins = userData.reduce((s, r) => s + ((r.data?.checkins || []).length), 0);
+  document.getElementById('stat-cards').innerHTML = [
+    ['Allowlist',  total,        'invited'],
+    ['Onboarded',  active,       'signed in + has data'],
+    ['Total doses', totalDoses,  'logged across all users'],
+    ['Check-ins',  totalCheckins,'logged across all users'],
+  ].map(([label, num, sub]) => `
+    <div class="panel p-5">
+      <div class="stat-label mb-2">${label}</div>
+      <div class="stat-num accent-text">${num}</div>
+      <div class="text-[11px] mono mt-1" style="color: var(--muted-2);">${sub}</div>
+    </div>
+  `).join('');
+
+  // Table
+  const body = document.getElementById('list-body');
+  if (allow.length === 0) {
+    body.innerHTML = '<tr><td colspan="8" class="text-center muted py-6 text-sm">No one on the allowlist yet. Add your first beta user above.</td></tr>';
+  } else {
+    body.innerHTML = allow.map(a => {
+      const row = byEmail[a.email.toLowerCase()];
+      const stacks   = row?.data?.stacks?.length   || 0;
+      const doses    = row?.data?.doses?.length    || 0;
+      const checkins = row?.data?.checkins?.length || 0;
+      const lastSeen = row?.updated_at;
+      let pill;
+      if (!row) pill = '<span class="pill gray">invited</span>';
+      else if (doses + checkins === 0) pill = '<span class="pill amber">signed in</span>';
+      else pill = '<span class="pill green">active</span>';
+      return `
+        <tr>
+          <td class="mono text-[12px]">${a.email}</td>
+          <td>${pill}</td>
+          <td class="mono text-[12px] muted">${fmtDate(lastSeen)}</td>
+          <td class="text-center">${stacks}</td>
+          <td class="text-center">${doses}</td>
+          <td class="text-center">${checkins}</td>
+          <td class="text-[12px] muted">${a.notes || '—'}</td>
+          <td><button class="btn-small btn-danger" onclick="removeFromAllowlist('${a.email}')">Remove</button></td>
+        </tr>
+      `;
+    }).join('');
+  }
+  document.getElementById('list-count').textContent = allow.length + ' email' + (allow.length === 1 ? '' : 's');
+}
+
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session && ADMINS.includes(session.user.email.toLowerCase())) {
+    me = session.user;
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('me-email').textContent = me.email;
+    await renderAll();
+  } else if (session) {
+    document.getElementById('auth-status').textContent = 'Not authorized for admin.';
+    document.getElementById('auth-gate').style.display = 'flex';
+    await sb.auth.signOut();
+  } else {
+    document.getElementById('auth-gate').style.display = 'flex';
+  }
+
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session && ADMINS.includes(session.user.email.toLowerCase())) {
+      me = session.user;
+      document.getElementById('auth-gate').style.display = 'none';
+      document.getElementById('me-email').textContent = me.email;
+      await renderAll();
+    }
+  });
+}
+init();
+</script>
+
+</body>
+</html>
