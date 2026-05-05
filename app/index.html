@@ -294,6 +294,9 @@
     <p class="text-sm" style="color: var(--muted); line-height: 1.6; margin-bottom: 18px;">
       You're solely responsible for what you choose to put in your body. Please consult a qualified physician before starting, modifying, or stopping any protocol.
     </p>
+    <label style="display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'JetBrains Mono', monospace;">What should we call you? (optional)</label>
+    <input type="text" class="input-field" id="disclaimer-name" placeholder="Your first name" maxlength="40" style="margin-bottom: 16px;">
+
     <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 14px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; margin-top: 0;">
       <input type="checkbox" id="disclaimer-checkbox" style="margin-top: 3px; accent-color: var(--accent); width: 16px; height: 16px;">
       <span style="font-size: 13px; color: var(--text); line-height: 1.5;">I understand this is a research logbook, not medical advice, and I take responsibility for my own protocol decisions.</span>
@@ -466,6 +469,13 @@
     <h3 class="text-base font-bold tracking-tight mb-2">Account</h3>
     <p class="text-sm muted mb-2"><strong style="color: var(--text);">Signed in as:</strong> <span class="mono" id="account-email">—</span></p>
     <p class="text-sm muted mb-4"><strong style="color: var(--text);">Storage:</strong> Cloud sync — your data follows you across every device.</p>
+
+    <label style="display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'JetBrains Mono', monospace;">Display name</label>
+    <div class="flex gap-2 mb-4" style="max-width: 420px;">
+      <input type="text" class="input-field" id="settings-display-name" placeholder="What we call you in greetings" maxlength="40">
+      <button class="btn-small" onclick="saveDisplayName()">Save</button>
+    </div>
+
     <button class="btn-small" onclick="signOut()">Sign out</button>
   </div>
 
@@ -1254,15 +1264,31 @@ function chartCard(label, key, unit, data) {
 // ============== SETTINGS TAB ==============
 function renderSettings() {
   document.getElementById('account-email').textContent = currentUser?.email || '—';
+  const nameInput = document.getElementById('settings-display-name');
+  if (nameInput) nameInput.value = state.displayName || '';
+}
+function saveDisplayName() {
+  const v = (document.getElementById('settings-display-name').value || '').trim();
+  state.displayName = v;
+  saveState();
+  renderToday();
+  toast(v ? 'Display name updated' : 'Display name cleared');
 }
 
 // ============== USER DISPLAY HELPERS ==============
 function userDisplayName() {
+  // 1. If the user set a preferred name, always use that.
+  if (state.displayName && state.displayName.trim()) {
+    return state.displayName.trim();
+  }
+  // 2. Otherwise derive from email — but only if it looks like a real name.
   if (!currentUser?.email) return '';
-  // Use first part of email, capitalized: "mike.bohm@x.com" → "Mike"
   const local = currentUser.email.split('@')[0];
-  const first = local.split(/[._-]/)[0];
-  if (!first) return '';
+  let first = local.split(/[._-]/)[0] || '';
+  // Strip trailing digits ("mbohm357" → "mbohm", "kyle1990" → "kyle")
+  first = first.replace(/\d+$/, '');
+  // If what's left is too short or still contains digits, give up gracefully
+  if (first.length < 2 || /\d/.test(first)) return '';
   return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
 }
 function updateAvatarAndChrome() {
@@ -1289,9 +1315,12 @@ function acceptDisclaimer() {
     toast('Please confirm to continue');
     return;
   }
+  const name = (document.getElementById('disclaimer-name').value || '').trim();
+  if (name) state.displayName = name;
   state.acceptedTos = new Date().toISOString();
   saveState();
   document.getElementById('disclaimer-backdrop').classList.remove('active');
+  renderToday();
 }
 
 // ============== EXPORT / IMPORT ==============
