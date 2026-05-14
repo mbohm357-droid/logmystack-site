@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LogMyStack — Create card</title>
+<meta name="description" content="Turn your stack into a shareable protocol card.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="robots" content="noindex, nofollow">
+<!--
+  Create flow v0.
+  - Active stack is currently mocked at the top of <script>; replace
+    getActiveStack() with a Supabase fetch when ready.
+  - On Post → writes the card to localStorage('lms_published'),
+    redirects to /app/feed/ which reads that key and prepends.
+  - On Save as draft → writes to localStorage('lms_drafts').
+  - Card-rendering code is duplicated from /app/feed/index.html for now;
+    extract to /app/shared/card.{js,css} once design has stabilized.
+-->
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0a0a;
+    --panel: #111111;
+    --panel-2: #161616;
+    --border: #262626;
+    --border-2: #1f1f1f;
+    --text: #fafafa;
+    --muted: #a3a3a3;
+    --muted-2: #737373;
+    --accent: #34d399;
+    --accent-dim: #0d4a35;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --type-healing: #93c5fd;
+    --type-glp1: #c4b5fd;
+    --type-gh: #fcd34d;
+    --type-cognitive: #f9a8d4;
+    --type-metabolic: #fdba74;
+  }
+  * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; box-sizing: border-box; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  html, body {
+    background-color: #0a0a0a !important;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
+  .muted { color: var(--muted); }
+
+  /* Header (matches /app/feed/) */
+  .tab {
+    font-size: 14px; font-weight: 500; color: var(--muted);
+    padding: 8px 16px; border-radius: 8px; cursor: pointer;
+    transition: all 0.15s; background: transparent; border: none;
+    text-decoration: none; display: inline-flex; align-items: center;
+  }
+  .tab:hover { color: var(--text); background: #161616; }
+  .tab.active { color: var(--accent); background: rgba(52,211,153,0.08); }
+
+  /* ============================================================
+     Form styles
+     ============================================================ */
+  .page-eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--muted-2); margin-bottom: 8px;
+  }
+  .page-h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  .page-sub { font-size: 14px; color: var(--muted); margin-top: 6px; max-width: 540px; }
+
+  .form-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 22px 24px;
+    margin-bottom: 18px;
+  }
+  .form-section-num {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.16em;
+    color: var(--muted-2); margin-bottom: 4px;
+  }
+  .form-section-num .optional {
+    color: var(--muted-2); margin-left: 6px;
+    text-transform: none; letter-spacing: 0.04em; font-size: 10px;
+  }
+  .form-section-title {
+    font-size: 17px; font-weight: 600; letter-spacing: -0.01em;
+    margin-bottom: 4px; line-height: 1.2;
+  }
+  .form-section-sub {
+    font-size: 13px; color: var(--muted); line-height: 1.5;
+    margin-bottom: 18px;
+  }
+
+  .field-label {
+    display: block; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); margin-bottom: 7px;
+  }
+  .field-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+  .input-field {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    padding: 11px 14px; border-radius: 10px; font-size: 14.5px; width: 100%;
+    transition: border-color 0.15s, background 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .input-field:focus { outline: none; border-color: rgba(52,211,153,0.5); background: #1a1a1a; }
+  .input-field::placeholder { color: var(--muted-2); }
+  textarea.input-field { min-height: 100px; resize: vertical; font-family: 'Inter', sans-serif; }
+
+  .week-input {
+    width: 68px; text-align: center; font-family: 'JetBrains Mono', monospace;
+    font-size: 17px; font-weight: 600;
+  }
+  .week-divider { color: var(--muted-2); font-size: 15px; }
+  .field-suffix { color: var(--muted-2); font-size: 13px; }
+
+  /* Compound picker — checkbox cards */
+  .compound-pick {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 14px; background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 11px;
+    cursor: pointer; transition: all 0.15s;
+    margin-bottom: 8px;
+  }
+  .compound-pick:hover { border-color: #333; background: #1a1a1a; }
+  .compound-pick.selected {
+    border-color: rgba(52,211,153,0.45);
+    background: rgba(52,211,153,0.05);
+  }
+  .compound-pick-check {
+    width: 18px; height: 18px; border-radius: 5px;
+    border: 1.5px solid var(--border);
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.15s;
+  }
+  .compound-pick.selected .compound-pick-check {
+    background: var(--accent); border-color: var(--accent);
+  }
+  .compound-pick-check svg { width: 12px; height: 12px; display: none; color: #052e1a; }
+  .compound-pick.selected .compound-pick-check svg { display: block; }
+  .compound-pick-body { flex: 1; min-width: 0; }
+  .compound-pick-name { font-size: 14px; font-weight: 600; }
+  .compound-pick-meta {
+    font-size: 12px; color: var(--muted-2);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 2px;
+  }
+  .compound-pick-type {
+    flex-shrink: 0; font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 3px 8px; border-radius: 4px;
+    background: var(--panel); border: 1px solid var(--border);
+  }
+  .compound-pick-type.healing  { color: var(--type-healing);  border-color: rgba(147,197,253,0.30); background: rgba(147,197,253,0.07); }
+  .compound-pick-type.glp1     { color: var(--type-glp1);     border-color: rgba(196,181,253,0.30); background: rgba(196,181,253,0.07); }
+  .compound-pick-type.gh       { color: var(--type-gh);       border-color: rgba(252,211,77,0.30);  background: rgba(252,211,77,0.07);  }
+  .compound-pick-type.cognitive{ color: var(--type-cognitive);border-color: rgba(249,168,212,0.30); background: rgba(249,168,212,0.07); }
+  .compound-pick-type.metabolic{ color: var(--type-metabolic);border-color: rgba(253,186,116,0.30); background: rgba(253,186,116,0.07); }
+
+  .stack-empty {
+    padding: 30px 16px; text-align: center; color: var(--muted);
+    border: 1px dashed var(--border); border-radius: 12px;
+    font-size: 13px;
+  }
+
+  /* Skip button — absolute top-right corner of each question */
+  .question-block { position: relative; }
+  .question-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 4px; gap: 8px;
+    padding-right: 52px;
+  }
+  .skip-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1;
+    background: transparent; border: none;
+    color: #525252;
+    font-size: 10.5px; font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    cursor: pointer; padding: 4px 8px; border-radius: 6px;
+    transition: color 0.15s, background 0.15s; white-space: nowrap;
+  }
+  .skip-btn:hover { color: var(--muted-2); background: rgba(255,255,255,0.04); }
+  .question-block.skipped {
+    padding: 12px 14px;
+    background: transparent;
+    border: 1px dashed var(--border);
+  }
+
+  /* Outcome / question block */
+  .question-block {
+    padding: 16px 16px 18px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+  .question-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--accent); margin-bottom: 2px;
+  }
+  .question-text {
+    font-size: 14.5px; font-weight: 500; line-height: 1.4;
+    margin-bottom: 14px;
+  }
+  .question-sliders { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 640px) {
+    .question-sliders { grid-template-columns: 1fr 1fr; gap: 18px; }
+  }
+  .slider-block {
+    background: var(--panel); border: 1px solid var(--border-2);
+    border-radius: 10px; padding: 11px 13px 12px;
+  }
+  .slider-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .slider-head-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+  }
+  .slider-head-value {
+    font-family: 'JetBrains Mono', monospace; font-size: 17px;
+    font-weight: 700; color: var(--text);
+  }
+  .slider-head-value .denom {
+    font-size: 11px; color: var(--muted-2); font-weight: 400;
+  }
+  .lms-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 4px;
+    background: linear-gradient(90deg, #2a2a2a, #2a2a2a); /* overridden inline */
+    border-radius: 999px; outline: none; cursor: pointer;
+    margin: 4px 0 9px;
+  }
+  .lms-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid #052e1a;
+    box-shadow: 0 0 0 4px rgba(52,211,153,0.15);
+    transition: transform 0.1s;
+  }
+  .lms-slider::-webkit-slider-thumb:hover { transform: scale(1.1); }
+  .lms-slider::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid #052e1a;
+  }
+  .slider-anchors {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: var(--muted-2);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.04em; gap: 4px;
+  }
+  .slider-anchors span { flex: 1; }
+  .slider-anchors span:nth-child(2) { text-align: center; }
+  .slider-anchors span:nth-child(3) { text-align: right; }
+
+  .delta-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 12px;
+    padding: 4px 10px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    background: var(--panel); border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .delta-badge.pos { color: var(--accent); border-color: rgba(52,211,153,0.4); background: rgba(52,211,153,0.06); }
+  .delta-badge.neg { color: var(--danger); border-color: rgba(248,113,113,0.4); background: rgba(248,113,113,0.06); }
+
+  .questions-empty {
+    padding: 22px 16px; text-align: center; color: var(--muted);
+    border: 1px dashed var(--border); border-radius: 12px;
+    font-size: 13px;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    background: var(--accent); color: #052e1a; font-weight: 600;
+    padding: 11px 22px; border-radius: 10px; font-size: 14px;
+    cursor: pointer; border: none; transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.92; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    font-weight: 500; padding: 10px 18px; border-radius: 10px;
+    font-size: 14px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-secondary:hover { background: #1f1f1f; border-color: #333; }
+
+  .form-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; padding: 18px 0 0;
+    flex-wrap: wrap;
+  }
+  .form-validation {
+    font-size: 12.5px; color: var(--muted-2);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .form-validation.error { color: var(--warn); }
+
+  /* Layout */
+  .create-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  @media (min-width: 1100px) {
+    .create-grid {
+      grid-template-columns: minmax(0, 1fr) 400px;
+      gap: 40px;
+    }
+    .preview-col {
+      position: sticky;
+      top: 80px;
+      align-self: start;
+      height: fit-content;
+    }
+  }
+  .preview-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.16em;
+    color: var(--muted-2); margin-bottom: 10px;
+  }
+  .preview-help {
+    margin-top: 14px; font-size: 12px; color: var(--muted-2);
+    line-height: 1.55;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--panel); border: 1px solid rgba(52,211,153,0.4); color: var(--text);
+    padding: 12px 20px; border-radius: 12px; font-size: 13.5px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.5);
+    display: none; align-items: center; gap: 8px; z-index: 200;
+  }
+  .toast.show { display: inline-flex; }
+  .toast-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 8px rgba(52,211,153,0.7);
+  }
+
+  /* ============================================================
+     CARD PREVIEW STYLES — duplicated from /app/feed/index.html.
+     Keep in sync until extracted to a shared stylesheet.
+     ============================================================ */
+  .type-pill {
+    display: inline-flex; align-items: center; font-size: 10.5px;
+    font-family: 'JetBrains Mono', monospace; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 2px 9px; border-radius: 5px;
+    font-weight: 500; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--muted);
+  }
+  .type-pill.healing  { color: var(--type-healing);  border-color: rgba(147,197,253,0.30); background: rgba(147,197,253,0.07); }
+  .type-pill.glp1     { color: var(--type-glp1);     border-color: rgba(196,181,253,0.30); background: rgba(196,181,253,0.07); }
+  .type-pill.gh       { color: var(--type-gh);       border-color: rgba(252,211,77,0.30);  background: rgba(252,211,77,0.07);  }
+  .type-pill.cognitive{ color: var(--type-cognitive);border-color: rgba(249,168,212,0.30); background: rgba(249,168,212,0.07); }
+  .type-pill.metabolic{ color: var(--type-metabolic);border-color: rgba(253,186,116,0.30); background: rgba(253,186,116,0.07); }
+
+  .card {
+    width: 100%;
+    background:
+      radial-gradient(ellipse at top, rgba(52,211,153,0.04), transparent 60%),
+      linear-gradient(180deg, var(--panel) 0%, #0d0d0d 100%);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+  }
+  .card-toprail {
+    height: 5px;
+    background: linear-gradient(90deg, var(--accent) 0%, #6ee7b7 50%, var(--accent) 100%);
+  }
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 18px 18px 8px 18px; gap: 14px; }
+  .card-titleblock { min-width: 0; flex: 1; }
+  .card-title { font-size: 19px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.15; color: var(--text); }
+  .card-typeline { margin-top: 6px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted-2); letter-spacing: 0.08em; text-transform: uppercase; }
+  .card-setid { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted-2); letter-spacing: 0.1em; }
+  .cost-ring {
+    flex-shrink: 0; width: 56px; height: 56px; border-radius: 50%;
+    border: 2px solid rgba(52,211,153,0.45);
+    background: radial-gradient(circle at 30% 30%, rgba(52,211,153,0.18), rgba(52,211,153,0.04));
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--accent); font-family: 'JetBrains Mono', monospace;
+    box-shadow: inset 0 0 14px rgba(52,211,153,0.10);
+  }
+  .cost-ring-num { font-size: 15px; font-weight: 700; line-height: 1; }
+  .cost-ring-label { font-size: 8.5px; letter-spacing: 0.18em; margin-top: 3px; opacity: 0.85; }
+  .cost-ring.in-progress {
+    border-color: rgba(252,211,77,0.45);
+    background: radial-gradient(circle at 30% 30%, rgba(252,211,77,0.18), rgba(252,211,77,0.04));
+    color: var(--warn);
+  }
+  .card-art {
+    position: relative; margin: 10px 16px 12px 16px; height: 175px;
+    background:
+      radial-gradient(ellipse at center, rgba(255,255,255,0.025), transparent 70%),
+      linear-gradient(180deg, #0c0c0c, #0a0a0a);
+    border: 1px solid var(--border-2); border-radius: 12px; overflow: hidden;
+  }
+  .art-tick { position: absolute; width: 12px; height: 12px; border-color: var(--muted-2); opacity: 0.5; }
+  .art-tick.tl { top: 6px; left: 6px; border-top: 1px solid; border-left: 1px solid; }
+  .art-tick.tr { top: 6px; right: 6px; border-top: 1px solid; border-right: 1px solid; }
+  .art-tick.bl { bottom: 6px; left: 6px; border-bottom: 1px solid; border-left: 1px solid; }
+  .art-tick.br { bottom: 6px; right: 6px; border-bottom: 1px solid; border-right: 1px solid; }
+  .art-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .week-grid { position: absolute; top: 12px; right: 12px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+  .week-dot { width: 7px; height: 7px; border-radius: 2px; background: var(--border); }
+  .week-dot.filled { background: var(--accent); box-shadow: 0 0 4px rgba(52,211,153,0.5); }
+  .week-dot.current { background: transparent; border: 1px solid var(--warn); box-shadow: 0 0 4px rgba(252,211,77,0.4); }
+  .compounds { padding: 0 18px; display: flex; flex-direction: column; gap: 9px; }
+  .compound-row { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 10px; padding-bottom: 8px; border-bottom: 1px dashed var(--border-2); }
+  .compound-row:last-child { border-bottom: none; padding-bottom: 2px; }
+  .compound-name { font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: -0.005em; }
+  .compound-move { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-2); align-self: center; padding-left: 2px; }
+  .compound-dose { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--muted); text-align: right; white-space: nowrap; }
+  .flavor {
+    margin: 14px 18px 0 18px; padding: 10px 12px 10px 14px;
+    background: rgba(52,211,153,0.03); border-left: 2px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    font-size: 12.5px; font-style: italic; color: var(--muted); line-height: 1.5;
+  }
+  .stats {
+    margin: 14px 14px 12px 14px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .stat { padding: 9px 4px 8px; text-align: center; border-right: 1px solid var(--border-2); }
+  .stat:last-child { border-right: none; }
+  .stat:nth-child(4n) { border-right: none; }
+  .stat:nth-child(n+5) { border-top: 1px solid var(--border-2); }
+
+  .num-input {
+    width: 100%;
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    padding: 11px 13px; border-radius: 9px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 17px; font-weight: 700;
+    outline: none; transition: border-color 0.15s;
+    -moz-appearance: textfield;
+  }
+  .num-input:focus { border-color: rgba(52,211,153,0.5); }
+  .num-input::-webkit-outer-spin-button,
+  .num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .num-input::placeholder { color: var(--muted-2); font-weight: 400; }
+  .num-suffix {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .stat-label { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-2); margin-bottom: 4px; }
+  .stat-delta { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; line-height: 1; }
+  .stat-delta.pos, .stat-delta.neg-good { color: var(--accent); }
+  .stat-delta.neg { color: var(--danger); }
+  .stat-delta.zero { color: var(--muted); }
+  .stat-meta { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted-2); margin-top: 3px; }
+  .card-footer {
+    padding: 10px 18px 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    color: var(--muted-2); letter-spacing: 0.05em;
+    border-top: 1px solid var(--border-2);
+  }
+  .card-footer .dot { color: var(--border); }
+  .card-footer .verified { color: var(--accent); }
+  .glyph-group .glyph-label,
+  .glyph-group .glyph-label-bg {
+    opacity: 0;
+    transition: opacity 0.18s;
+    pointer-events: none;
+  }
+  .glyph-group:hover .glyph-label,
+  .glyph-group:hover .glyph-label-bg {
+    opacity: 1;
+  }
+
+  /* Per-compound start/stop weeks (shown when a compound is selected) */
+  .compound-weeks-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin: -6px 0 10px 0;
+    padding: 9px 14px 9px 44px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    background: rgba(52,211,153,0.03);
+    border-left: 2px solid rgba(52,211,153,0.3);
+    border-radius: 0 8px 8px 0;
+  }
+  .weeks-label { color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.06em; }
+  .weeks-divider { color: var(--border); }
+  .weeks-hint { color: var(--muted-2); font-size: 10px; font-style: italic; margin-left: -2px; }
+  .weeks-input {
+    width: 48px; padding: 4px 6px; text-align: center;
+    background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    -moz-appearance: textfield;
+  }
+  .weeks-input:focus { outline: none; border-color: rgba(52,211,153,0.5); }
+  .weeks-input::-webkit-outer-spin-button,
+  .weeks-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .weeks-input::placeholder { color: var(--muted-2); font-weight: 400; }
+</style>
+</head>
+<body>
+
+<!-- Header (mirrors /app/feed/) -->
+<header style="border-bottom: 1px solid var(--border); background: #0a0a0a; position: sticky; top: 0; z-index: 50;">
+  <div class="mx-auto px-6 py-3 flex items-center justify-between" style="max-width: 1400px;">
+    <div class="flex items-center gap-8">
+      <a href="/app/" class="flex items-center gap-2" style="text-decoration: none; color: inherit;">
+        <div style="width: 22px; height: 22px; background: var(--accent); border-radius: 5px; display: inline-flex; align-items: center; justify-content: center;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#052e1a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h12"/></svg>
+        </div>
+        <span class="font-bold tracking-tight" style="font-size: 15px;">LogMyStack</span>
+      </a>
+      <nav class="flex items-center gap-1">
+        <a class="tab" href="/app/">Today</a>
+        <a class="tab" href="/app/">Stack</a>
+        <a class="tab" href="/app/">History</a>
+        <a class="tab" href="/app/">Metrics</a>
+        <a class="tab" href="/app/feed/">Feed</a>
+        <a class="tab" href="/app/my/">My Cards</a>
+        <a class="tab" href="/app/saved/">Saved</a>
+        <a class="tab" href="/app/">Settings</a>
+      </nav>
+    </div>
+    <div class="flex items-center gap-3">
+      <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--accent-dim); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 11px; border: 1px solid rgba(52,211,153,0.3);" id="header-avatar">·</div>
+    </div>
+  </div>
+</header>
+
+<main class="mx-auto px-6 py-8" style="max-width: 1400px;">
+
+  <!-- Page header -->
+  <div class="flex items-start justify-between mb-7 flex-wrap gap-4">
+    <div>
+      <div class="page-eyebrow">Create card</div>
+      <h1 class="page-h1">Turn your cycle into a card.</h1>
+      <p class="page-sub">Pick from your active stack, answer 4 quick outcome questions, and either post to the feed or save as a draft.</p>
+    </div>
+    <a href="/app/feed/" class="btn-secondary" style="text-decoration: none;">← Back to feed</a>
+  </div>
+
+  <div class="create-grid">
+
+    <!-- ============================================================
+         LEFT — FORM
+         ============================================================ -->
+    <div class="form-col">
+
+      <!-- Section 1 · Basics -->
+      <section class="form-section">
+        <div class="form-section-num">01 · Basics</div>
+        <h2 class="form-section-title">Name your protocol</h2>
+        <p class="form-section-sub">A short, scannable title — this is what appears as the headline on your card.</p>
+
+        <label class="field-label" for="f-title">Title</label>
+        <input id="f-title" type="text" class="input-field" placeholder="e.g. Shoulder Recovery, Q1 Cut, Sleep Reset…" maxlength="48">
+
+        <label class="field-label mt-5" for="f-week-current" style="margin-top: 18px;">Cycle progress</label>
+        <div class="field-row">
+          <div class="flex items-center gap-2">
+            <input id="f-week-current" type="number" class="input-field week-input" min="1" max="52" value="1">
+            <span class="week-divider">/</span>
+            <input id="f-week-total" type="number" class="input-field week-input" min="1" max="52" value="12">
+            <span class="field-suffix">weeks</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2 · Compounds -->
+      <section class="form-section">
+        <div class="form-section-num">02 · Compounds</div>
+        <h2 class="form-section-title">Pick from your active stack</h2>
+        <p class="form-section-sub">Pulled from the stack you're currently logging. Don't see something? <a href="/app/" style="color: var(--accent); text-decoration: none;">Add it to your stack first</a>.</p>
+        <div id="stack-picker"><!-- compound-pick rows injected --></div>
+      </section>
+
+      <!-- Section 3 · Outcomes -->
+      <section class="form-section">
+        <div class="form-section-num">03 · Outcomes</div>
+        <h2 class="form-section-title">How's the cycle going?</h2>
+        <p class="form-section-sub">Based on the compounds you picked, we'll surface the 4 outcomes most likely to be affected. Rate each one as it was <strong style="color: var(--text);">before you started</strong>, then how it is <strong style="color: var(--text);">now</strong>.</p>
+        <div id="questions-mount"><!-- question-blocks injected --></div>
+      </section>
+
+      <!-- Section 4 · Notes -->
+      <section class="form-section">
+        <div class="form-section-num">04 · Notes <span class="optional">— optional</span></div>
+        <h2 class="form-section-title">Anything worth flagging?</h2>
+        <p class="form-section-sub">A line or two on what surprised you, what you'd change, side effects you noticed. Italicized on the card — keep it human.</p>
+        <textarea id="f-notes" class="input-field" placeholder="e.g. shoulder injury about 80% resolved by week 8 — most surprising delta. zero side effects." maxlength="240"></textarea>
+      </section>
+
+      <!-- Section 5 · Vendor -->
+      <section class="form-section">
+        <div class="form-section-num">05 · Vendor <span class="optional">— optional</span></div>
+        <h2 class="form-section-title">Where did you source it?</h2>
+        <p class="form-section-sub">Adds an accountability line to the footer. Adding purity (lab tested %) gives your card a green "lot verified ✓" badge.</p>
+        <div class="field-row">
+          <div style="flex: 1; min-width: 200px;">
+            <label class="field-label" for="f-vendor">Vendor</label>
+            <input id="f-vendor" type="text" class="input-field" placeholder="e.g. PrimeRaws">
+          </div>
+          <div style="width: 130px;">
+            <label class="field-label" for="f-purity">Purity</label>
+            <input id="f-purity" type="text" class="input-field" placeholder="98.7%">
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer / submit -->
+      <div class="form-footer">
+        <div class="form-validation" id="validation-msg">Fill in a title and pick at least 1 compound to post.</div>
+        <div class="flex items-center gap-2">
+          <button class="btn-secondary" id="btn-draft">Save as draft</button>
+          <button class="btn-primary" id="btn-post" disabled>Post to feed</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================
+         RIGHT — LIVE PREVIEW
+         ============================================================ -->
+    <aside class="preview-col">
+      <div class="preview-label">Live preview</div>
+      <div id="preview-mount"></div>
+      <div class="preview-help">
+        The card updates as you fill in the form. This is what goes to the feed when you post.
+      </div>
+    </aside>
+
+  </div>
+</main>
+
+<div class="toast" id="toast"><span class="toast-dot"></span><span id="toast-msg">Saved</span></div>
+
+<script>
+/* ============================================================
+ * SHARED CARD DATA  — duplicated from /app/feed/index.html.
+ * Keep these in sync until extracted to /app/shared/card.js.
+ * ============================================================ */
+
+const TYPE_LABEL = {
+  healing:   'Healing',
+  glp1:      'GLP-1',
+  gh:        'GH Secretagogue',
+  cognitive: 'Cognitive',
+  metabolic: 'Metabolic',
+};
+const TYPE_COLOR = {
+  healing:   '#93c5fd',
+  glp1:      '#c4b5fd',
+  gh:        '#fcd34d',
+  cognitive: '#f9a8d4',
+  metabolic: '#fdba74',
+};
+
+const BODY = '<ellipse cx="50" cy="86" rx="14" ry="2.5" fill="currentColor" fill-opacity="0.18" stroke="none"/><rect x="46" y="30" width="8" height="28" rx="4" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="22" r="8.5" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2.4"/><circle cx="46.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><circle cx="53.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><line x1="46" y1="38" x2="32" y2="50" stroke-width="2.4"/><line x1="54" y1="38" x2="68" y2="50" stroke-width="2.4"/><line x1="46" y1="58" x2="38" y2="84" stroke-width="2.4"/><line x1="54" y1="58" x2="62" y2="84" stroke-width="2.4"/>';
+
+const GLYPH = {
+  bpc157: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<line x1="50" y1="40" x2="50" y2="56" stroke-width="4" stroke-linecap="round"/><line x1="42" y1="48" x2="58" y2="48" stroke-width="4" stroke-linecap="round"/><rect x="40" y="40" width="20" height="16" fill="none" stroke="currentColor" stroke-width="0.9" stroke-dasharray="2 1.5" opacity="0.45" rx="2"/></g>`,
+  tb500: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<path d="M30 50 Q18 44 14 52 Q16 60 28 56 Q30 54 30 50 Z" fill="currentColor" fill-opacity="0.45" stroke-width="1.4"/><line x1="18" y1="54" x2="26" y2="51" stroke-width="0.9" opacity="0.65"/><line x1="20" y1="56" x2="26" y2="53" stroke-width="0.9" opacity="0.5"/><path d="M70 50 Q82 44 86 52 Q84 60 72 56 Q70 54 70 50 Z" fill="currentColor" fill-opacity="0.45" stroke-width="1.4"/><line x1="82" y1="54" x2="74" y2="51" stroke-width="0.9" opacity="0.65"/><line x1="80" y1="56" x2="74" y2="53" stroke-width="0.9" opacity="0.5"/><path d="M40 12 Q34 4 44 8 Q46 2 50 6 Q54 2 56 8 Q66 4 60 12" stroke-width="1.6"/><circle cx="50" cy="6" r="1.2" fill="currentColor" stroke="none"/></g>`,
+  ghkcu: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<path d="M50 38 L58 48 L50 58 L42 48 Z" fill="currentColor" fill-opacity="0.7" stroke-width="1.5"/><line x1="50" y1="38" x2="42" y2="48" stroke="#fff" stroke-width="0.9" opacity="0.45"/><path d="M20 16 L22 22 L26 24 L22 26 L20 32 L18 26 L14 24 L18 22 Z" fill="currentColor" stroke="none"/><path d="M80 14 L82 18 L86 20 L82 22 L80 26 L78 22 L74 20 L78 18 Z" fill="currentColor" stroke="none" opacity="0.78"/><path d="M82 60 L84 64 L88 66 L84 68 L82 74 L80 68 L76 66 L80 64 Z" fill="currentColor" stroke="none" opacity="0.85"/><path d="M18 60 L20 64 L24 66 L20 68 L18 74 L16 68 L12 66 L16 64 Z" fill="currentColor" stroke="none" opacity="0.6"/><path d="M50 4 L51 6 L53 7 L51 8 L50 10 L49 8 L47 7 L49 6 Z" fill="currentColor" stroke="none" opacity="0.55"/></g>`,
+  thymosina1: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<path d="M14 38 L14 56 Q14 68 28 74 Q42 68 42 56 L42 38 Z" fill="currentColor" fill-opacity="0.30" stroke-width="2"/><line x1="14" y1="38" x2="42" y2="38" stroke-width="2"/><line x1="28" y1="44" x2="28" y2="66" stroke-width="2.6"/><line x1="20" y1="55" x2="36" y2="55" stroke-width="2.6"/></g>`,
+  cjc1295: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="86" rx="14" ry="2.5" fill="currentColor" fill-opacity="0.18" stroke="none"/><rect x="46" y="30" width="8" height="28" rx="4" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="22" r="8.5" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2.4"/><circle cx="46.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><circle cx="53.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><line x1="46" y1="38" x2="32" y2="50" stroke-width="2.4"/><line x1="54" y1="38" x2="74" y2="14" stroke-width="2.4"/><circle cx="74" cy="14" r="3" fill="currentColor" fill-opacity="0.5"/><line x1="46" y1="58" x2="38" y2="84" stroke-width="2.4"/><line x1="54" y1="58" x2="62" y2="84" stroke-width="2.4"/><path d="M78 10 Q82 6 86 12" stroke-width="2" opacity="0.85"/><path d="M80 4 Q86 0 92 8" stroke-width="1.6" opacity="0.55"/><path d="M82 -2 Q90 -5 96 4" stroke-width="1.4" opacity="0.3"/></g>`,
+  ipamorelin: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<circle cx="50" cy="22" r="13" stroke-width="2" stroke-dasharray="4 4" opacity="0.7"/><circle cx="50" cy="22" r="19" stroke-width="1.6" stroke-dasharray="3 6" opacity="0.45"/><circle cx="50" cy="22" r="25" stroke-width="1.4" stroke-dasharray="2 8" opacity="0.25"/></g>`,
+  tesamorelin: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<rect x="38" y="50" width="24" height="6" fill="currentColor" fill-opacity="0.55" stroke-width="1.5" rx="1"/><rect x="47" y="50" width="6" height="6" fill="none" stroke-width="1.3" rx="0.5"/><path d="M22 53 L32 53 M28 49 L32 53 L28 57" stroke-width="2" opacity="0.9"/><path d="M78 53 L68 53 M72 49 L68 53 L72 57" stroke-width="2" opacity="0.9"/></g>`,
+  sermorelin: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<g opacity="0.4"><circle cx="60" cy="22" r="7.5" stroke-width="1.6" stroke-dasharray="2 2"/><line x1="60" y1="30" x2="60" y2="58" stroke-width="1.6" stroke-dasharray="2 2"/></g><g opacity="0.22"><circle cx="70" cy="22" r="6.5" stroke-width="1.4" stroke-dasharray="2 3"/><line x1="70" y1="29" x2="70" y2="58" stroke-width="1.4" stroke-dasharray="2 3"/></g><g opacity="0.12"><circle cx="80" cy="22" r="5" stroke-width="1.2" stroke-dasharray="1 4"/></g></g>`,
+  hexarelin: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<path d="M54 32 L42 50 L50 50 L46 64" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 32 L20 40 L24 40 L22 48" stroke-width="1.4" opacity="0.6" stroke-linecap="round"/><path d="M74 32 L80 40 L76 40 L78 48" stroke-width="1.4" opacity="0.6" stroke-linecap="round"/></g>`,
+  ghrp2: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="86" rx="14" ry="2.5" fill="currentColor" fill-opacity="0.18" stroke="none"/><rect x="46" y="30" width="8" height="28" rx="4" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="22" r="8.5" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2.4"/><circle cx="46.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><circle cx="53.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><line x1="46" y1="38" x2="32" y2="50" stroke-width="2.4"/><line x1="54" y1="38" x2="80" y2="38" stroke-width="2.4"/><line x1="46" y1="58" x2="38" y2="84" stroke-width="2.4"/><line x1="54" y1="58" x2="62" y2="84" stroke-width="2.4"/><circle cx="86" cy="38" r="6" fill="currentColor" fill-opacity="0.35" stroke-width="1.4"/><circle cx="86" cy="38" r="2.5" fill="currentColor" stroke="none"/><line x1="86" y1="28" x2="86" y2="26" stroke-width="1.4" opacity="0.7"/><line x1="94" y1="38" x2="96" y2="38" stroke-width="1.4" opacity="0.7"/><line x1="86" y1="48" x2="86" y2="50" stroke-width="1.4" opacity="0.7"/><line x1="78" y1="38" x2="76" y2="38" stroke-width="1.4" opacity="0.6"/></g>`,
+  ghrp6: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="86" rx="14" ry="2.5" fill="currentColor" fill-opacity="0.18" stroke="none"/><rect x="46" y="30" width="8" height="28" rx="4" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="22" r="8.5" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2.4"/><circle cx="46.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><circle cx="53.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><line x1="54" y1="38" x2="78" y2="32" stroke-width="2.4"/><line x1="46" y1="38" x2="22" y2="32" stroke-width="2.4"/><line x1="46" y1="58" x2="38" y2="84" stroke-width="2.4"/><line x1="54" y1="58" x2="62" y2="84" stroke-width="2.4"/><circle cx="84" cy="32" r="5" fill="currentColor" fill-opacity="0.35" stroke-width="1.4"/><circle cx="84" cy="32" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="32" r="5" fill="currentColor" fill-opacity="0.35" stroke-width="1.4"/><circle cx="16" cy="32" r="2" fill="currentColor" stroke="none"/></g>`,
+  igf1lr3: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="86" rx="14" ry="2.5" fill="currentColor" fill-opacity="0.18" stroke="none"/><rect x="46" y="30" width="8" height="28" rx="4" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="22" r="8.5" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2.4"/><circle cx="46.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><circle cx="53.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><path d="M46 38 Q36 36 28 22" stroke-width="2.5"/><path d="M54 38 Q64 36 72 22" stroke-width="2.5"/><ellipse cx="38" cy="34" rx="5.5" ry="4" fill="currentColor" fill-opacity="0.55" stroke-width="1.4"/><ellipse cx="62" cy="34" rx="5.5" ry="4" fill="currentColor" fill-opacity="0.55" stroke-width="1.4"/><path d="M36 31 Q38 33 40 31" stroke-width="0.9" opacity="0.7"/><path d="M60 31 Q62 33 64 31" stroke-width="0.9" opacity="0.7"/><line x1="46" y1="58" x2="38" y2="84" stroke-width="2.4"/><line x1="54" y1="58" x2="62" y2="84" stroke-width="2.4"/></g>`,
+  semaglutide: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="86" rx="14" ry="2.5" fill="currentColor" fill-opacity="0.18" stroke="none"/><rect x="46" y="30" width="8" height="28" rx="4" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="22" r="8.5" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2.4"/><circle cx="46.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><circle cx="53.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><line x1="46" y1="38" x2="32" y2="50" stroke-width="2.4"/><path d="M54 38 Q66 32 58 20" stroke-width="2.4"/><line x1="46" y1="58" x2="38" y2="84" stroke-width="2.4"/><line x1="54" y1="58" x2="62" y2="84" stroke-width="2.4"/><rect x="42" y="20" width="14" height="3.5" fill="currentColor" rx="1"/><circle cx="49" cy="22" r="9" stroke-width="1.8" opacity="0.55"/></g>`,
+  tirzepatide: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="86" rx="14" ry="2.5" fill="currentColor" fill-opacity="0.18" stroke="none"/><rect x="46" y="30" width="8" height="28" rx="4" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="22" r="8.5" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2.4"/><circle cx="46.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><circle cx="53.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><path d="M46 38 Q36 30 40 18" stroke-width="2.4"/><path d="M54 38 Q64 30 60 18" stroke-width="2.4"/><line x1="46" y1="58" x2="38" y2="84" stroke-width="2.4"/><line x1="54" y1="58" x2="62" y2="84" stroke-width="2.4"/><rect x="32" y="16" width="14" height="3.5" fill="currentColor" rx="1"/><rect x="54" y="16" width="14" height="3.5" fill="currentColor" rx="1"/></g>`,
+  retatrutide: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="86" rx="14" ry="2.5" fill="currentColor" fill-opacity="0.18" stroke="none"/><rect x="46" y="30" width="8" height="28" rx="4" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="22" r="8.5" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2.4"/><circle cx="46.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><circle cx="53.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><path d="M46 38 Q36 30 40 18" stroke-width="2.4"/><path d="M54 38 Q64 30 60 18" stroke-width="2.4"/><line x1="46" y1="58" x2="38" y2="84" stroke-width="2.4"/><line x1="54" y1="58" x2="62" y2="84" stroke-width="2.4"/><rect x="32" y="14" width="14" height="3.5" fill="currentColor" rx="1"/><rect x="54" y="14" width="14" height="3.5" fill="currentColor" rx="1"/><rect x="42" y="4" width="16" height="3.5" fill="currentColor" rx="1"/></g>`,
+  cagrilintide: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<rect x="42" y="51" width="16" height="6" fill="currentColor" fill-opacity="0.65" stroke-width="1.6" rx="1"/><line x1="28" y1="50" x2="38" y2="52" stroke-width="1.4" opacity="0.75"/><line x1="28" y1="56" x2="38" y2="54" stroke-width="1.4" opacity="0.6"/><line x1="72" y1="50" x2="62" y2="52" stroke-width="1.4" opacity="0.75"/><line x1="72" y1="56" x2="62" y2="54" stroke-width="1.4" opacity="0.6"/><rect x="47" y="51" width="6" height="6" fill="none" stroke-width="1.2" rx="0.5"/></g>`,
+  aod9604: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="86" rx="12" ry="2.2" fill="currentColor" fill-opacity="0.18" stroke="none"/><rect x="47" y="30" width="6" height="30" rx="3" fill="currentColor" fill-opacity="0.15" stroke-width="2"/><circle cx="50" cy="22" r="8" fill="currentColor" fill-opacity="0.15" stroke-width="2.4"/><circle cx="46.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><circle cx="53.5" cy="21" r="1.3" fill="currentColor" stroke="none"/><line x1="47" y1="38" x2="36" y2="50" stroke-width="2.4"/><line x1="53" y1="38" x2="64" y2="50" stroke-width="2.4"/><line x1="47" y1="60" x2="42" y2="84" stroke-width="2.4"/><line x1="53" y1="60" x2="58" y2="84" stroke-width="2.4"/><g stroke-width="1.6" opacity="0.7"><path d="M28 36 L34 36 M30 34 L34 36 L30 38"/><path d="M28 46 L34 46 M30 44 L34 46 L30 48"/><path d="M28 56 L34 56 M30 54 L34 56 L30 58"/><path d="M28 66 L34 66 M30 64 L34 66 L30 68"/><path d="M72 36 L66 36 M70 34 L66 36 L70 38"/><path d="M72 46 L66 46 M70 44 L66 46 L70 48"/><path d="M72 56 L66 56 M70 54 L66 56 L70 58"/><path d="M72 66 L66 66 M70 64 L66 66 L70 68"/></g></g>`,
+  motsc: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<path d="M52 36 L42 50 L50 50 L46 62" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><g stroke-width="2" stroke-linecap="round" opacity="0.7"><line x1="14" y1="44" x2="20" y2="46"/><line x1="12" y1="54" x2="20" y2="54"/><line x1="14" y1="64" x2="20" y2="62"/><line x1="86" y1="44" x2="80" y2="46"/><line x1="88" y1="54" x2="80" y2="54"/><line x1="86" y1="64" x2="80" y2="62"/></g><g stroke-width="1.6" stroke-linecap="round" opacity="0.45"><line x1="50" y1="2" x2="50" y2="8"/><line x1="30" y1="6" x2="34" y2="12"/><line x1="70" y1="6" x2="66" y2="12"/></g></g>`,
+  amino1mq: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="86" rx="14" ry="2.5" fill="currentColor" fill-opacity="0.18" stroke="none"/><circle cx="46" cy="22" r="8" fill="currentColor" fill-opacity="0.15" stroke-width="2.4"/><circle cx="42.5" cy="21" r="1.2" fill="currentColor" stroke="none"/><circle cx="49.5" cy="21" r="1.2" fill="currentColor" stroke="none"/><line x1="46" y1="30" x2="54" y2="56" stroke-width="2.4"/><line x1="48" y1="38" x2="34" y2="30" stroke-width="2.4"/><line x1="52" y1="44" x2="66" y2="50" stroke-width="2.4"/><line x1="54" y1="56" x2="40" y2="78" stroke-width="2.4"/><line x1="54" y1="56" x2="68" y2="80" stroke-width="2.4"/><path d="M22 52 Q26 54 24 60 Q30 56 28 64 Q34 60 32 68" fill="currentColor" fill-opacity="0.35" stroke-width="1.4" stroke-linecap="round"/><line x1="14" y1="42" x2="24" y2="42" stroke-width="1.8" opacity="0.6"/><line x1="12" y1="50" x2="22" y2="50" stroke-width="1.6" opacity="0.45"/><line x1="16" y1="34" x2="26" y2="34" stroke-width="1.4" opacity="0.4"/></g>`,
+  tesofensine: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<path d="M50 92 L50 70" stroke-width="2.4" stroke-linecap="round"/><path d="M44 76 L50 70 L56 76" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><g stroke="none" fill="currentColor" opacity="0.6"><path d="M14 50 L15.5 53 L18 54 L15.5 55 L14 58 L12.5 55 L10 54 L12.5 53 Z"/><path d="M86 50 L87.5 53 L90 54 L87.5 55 L86 58 L84.5 55 L82 54 L84.5 53 Z"/><path d="M20 70 L21 72 L23 73 L21 74 L20 76 L19 74 L17 73 L19 72 Z" opacity="0.5"/><path d="M80 70 L81 72 L83 73 L81 74 L80 76 L79 74 L77 73 L79 72 Z" opacity="0.5"/></g></g>`,
+  semax: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<circle cx="50" cy="22" r="5" stroke-width="1.6" opacity="0.65"/><circle cx="50" cy="22" r="3" fill="currentColor" stroke="none"/><line x1="50" y1="10" x2="50" y2="14" stroke-width="2"/><line x1="50" y1="30" x2="50" y2="34" stroke-width="2"/><line x1="38" y1="22" x2="42" y2="22" stroke-width="2"/><line x1="58" y1="22" x2="62" y2="22" stroke-width="2"/><line x1="38" y1="10" x2="42" y2="14" stroke-width="1.4" opacity="0.7"/><line x1="62" y1="10" x2="58" y2="14" stroke-width="1.4" opacity="0.7"/><line x1="38" y1="34" x2="42" y2="30" stroke-width="1.4" opacity="0.7"/><line x1="62" y1="34" x2="58" y2="30" stroke-width="1.4" opacity="0.7"/></g>`,
+  selank: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="76" rx="20" ry="3" fill="currentColor" fill-opacity="0.18" stroke="none"/><circle cx="50" cy="20" r="8.5" fill="currentColor" fill-opacity="0.15" stroke-width="2.4"/><circle cx="46.5" cy="19" r="1.3" fill="currentColor" stroke="none"/><circle cx="53.5" cy="19" r="1.3" fill="currentColor" stroke="none"/><rect x="46" y="28" width="8" height="22" rx="4" fill="currentColor" fill-opacity="0.15" stroke-width="2"/><path d="M46 38 Q36 46 30 56" stroke-width="2.4"/><path d="M54 38 Q64 46 70 56" stroke-width="2.4"/><path d="M46 50 Q38 60 30 72" stroke-width="2.4"/><path d="M54 50 Q62 60 70 72" stroke-width="2.4"/><line x1="30" y1="72" x2="70" y2="72" stroke-width="1.8" opacity="0.7"/><circle cx="50" cy="20" r="14" stroke-width="0.8" stroke-dasharray="3 3" opacity="0.4"/><path d="M28 18 Q32 14 36 18" stroke-width="1.2" opacity="0.5"/><path d="M64 18 Q68 14 72 18" stroke-width="1.2" opacity="0.5"/></g>`,
+  dihexa: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<g stroke="none" fill="currentColor"><circle cx="30" cy="10" r="2"/><circle cx="70" cy="10" r="2"/><circle cx="20" cy="22" r="2.2"/><circle cx="80" cy="22" r="2.2"/><circle cx="24" cy="34" r="1.8" opacity="0.7"/><circle cx="76" cy="34" r="1.8" opacity="0.7"/><circle cx="40" cy="4" r="1.6" opacity="0.6"/><circle cx="60" cy="4" r="1.6" opacity="0.6"/></g><g stroke-width="0.9" opacity="0.55"><line x1="30" y1="10" x2="44" y2="18"/><line x1="70" y1="10" x2="56" y2="18"/><line x1="20" y1="22" x2="42" y2="20"/><line x1="80" y1="22" x2="58" y2="20"/><line x1="24" y1="34" x2="44" y2="26"/><line x1="76" y1="34" x2="56" y2="26"/></g></g>`,
+  cerebrolysin: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<path d="M66 4 Q56 4 56 14 Q56 26 70 26 Q84 26 84 14 Q84 4 76 4 Z" stroke-width="1.5" fill="currentColor" fill-opacity="0.15"/><path d="M62 14 Q64 8 70 8 Q72 5 75 8 Q80 9 80 14 Q80 19 76 21 Q78 22 76 24 Q72 25 70 22 Q66 23 65 19 Q62 18 62 14 Z" stroke-width="1.2" fill="currentColor" fill-opacity="0.35"/><line x1="70" y1="9" x2="70" y2="23" stroke-width="0.7" opacity="0.5"/><circle cx="58" cy="22" r="1.3" fill="currentColor" stroke="none"/><circle cx="55" cy="26" r="0.9" fill="currentColor" stroke="none"/></g>`,
+  epitalon: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<path d="M44 38 L56 38 L52 47 L56 56 L44 56 L48 47 Z" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/><line x1="42" y1="38" x2="58" y2="38" stroke-width="1.8"/><line x1="42" y1="56" x2="58" y2="56" stroke-width="1.8"/><path d="M45 40 L55 40 L51 46 L49 46 Z" fill="currentColor" stroke="none" opacity="0.7"/><path d="M48 52 L52 52 L52 54 L48 54 Z" fill="currentColor" stroke="none" opacity="0.7"/><line x1="50" y1="47" x2="50" y2="50" stroke-width="0.8" opacity="0.7"/></g>`,
+  nadplus: `<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${BODY}<path d="M38 10 L42 16 L46 6 L50 14 L54 6 L58 16 L62 10 L62 4 L38 4 Z" stroke-width="1.6" fill="currentColor" fill-opacity="0.3"/><circle cx="46" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="50" cy="9" r="1.6" fill="currentColor" stroke="none"/><circle cx="54" cy="6" r="1.4" fill="currentColor" stroke="none"/></g>`,
+};
+
+const COMPOUND = {
+  bpc157:      { display: 'BPC-157',       type: 'healing',   move: 'Restore'  },
+  tb500:       { display: 'TB-500',        type: 'healing',   move: 'Mend'     },
+  ghkcu:       { display: 'GHK-Cu',        type: 'healing',   move: 'Reclaim'  },
+  thymosina1:  { display: 'Thymosin A1',   type: 'healing',   move: 'Guard'    },
+  cjc1295:     { display: 'CJC-1295',      type: 'gh',        move: 'Signal'   },
+  ipamorelin:  { display: 'Ipamorelin',    type: 'gh',        move: 'Pulse'    },
+  tesamorelin: { display: 'Tesamorelin',   type: 'gh',        move: 'Surge'    },
+  sermorelin:  { display: 'Sermorelin',    type: 'gh',        move: 'Echo'     },
+  hexarelin:   { display: 'Hexarelin',     type: 'gh',        move: 'Spike'    },
+  ghrp2:       { display: 'GHRP-2',        type: 'gh',        move: 'Trigger'  },
+  ghrp6:       { display: 'GHRP-6',        type: 'gh',        move: 'Trigger'  },
+  igf1lr3:     { display: 'IGF-1 LR3',     type: 'gh',        move: 'Forge'    },
+  semaglutide: { display: 'Semaglutide',   type: 'glp1',      move: 'Dampen'   },
+  tirzepatide: { display: 'Tirzepatide',   type: 'glp1',      move: 'Dampen+'  },
+  retatrutide: { display: 'Retatrutide',   type: 'glp1',      move: 'Dampen++' },
+  cagrilintide:{ display: 'Cagrilintide',  type: 'glp1',      move: 'Curb'     },
+  aod9604:     { display: 'AOD-9604',      type: 'metabolic', move: 'Trim'     },
+  motsc:       { display: 'MOTS-c',        type: 'metabolic', move: 'Charge'   },
+  amino1mq:    { display: '5-Amino-1MQ',   type: 'metabolic', move: 'Burn'     },
+  tesofensine: { display: 'Tesofensine',   type: 'metabolic', move: 'Lift'     },
+  semax:       { display: 'Semax',         type: 'cognitive', move: 'Focus'    },
+  selank:      { display: 'Selank',        type: 'cognitive', move: 'Calm'     },
+  dihexa:      { display: 'Dihexa',        type: 'cognitive', move: 'Forge Mind'},
+  cerebrolysin:{ display: 'Cerebrolysin',  type: 'cognitive', move: 'Repair'   },
+};
+
+/* ============================================================
+ * QUESTION BANK
+ * All metrics are positively-framed: 10 is always "better."
+ * Anchor labels appear under the slider so a "7" means roughly
+ * the same thing across users.
+ * ============================================================ */
+const METRICS = {
+  // 1-10 subjective ratings. Positively framed — 10 is always "better".
+  sleep_quality:     { type: 'rating', better: 'higher', label: 'Sleep quality',     question: 'How would you rate your sleep quality?',                       low: 'Restless, broken',    mid: 'OK, average',         high: 'Deep, restorative' },
+  energy_level:      { type: 'rating', better: 'higher', label: 'Energy',            question: 'How is your overall energy through the day?',                 low: 'Drained, foggy',      mid: 'OK by afternoon',     high: 'Sustained high' },
+  recovery:          { type: 'rating', better: 'higher', label: 'Recovery',          question: 'How quickly do you bounce back after workouts or stress?',    low: '3+ days, slow',       mid: 'Next-day okay',       high: 'Same-day fresh' },
+  joint_comfort:     { type: 'rating', better: 'higher', label: 'Joint comfort',     question: 'How comfortable do your joints / tendons feel day-to-day?',   low: 'Daily pain',          mid: 'Occasional twinges',  high: 'Pain-free' },
+  body_comp:         { type: 'rating', better: 'higher', label: 'Body comp',         question: 'How lean / tight does your body feel?',                       low: 'Soft, bloated',       mid: 'Average',             high: 'Lean, defined' },
+  appetite_control:  { type: 'rating', better: 'higher', label: 'Appetite',          question: 'How easy is it to control your appetite?',                    low: 'Constantly hungry',   mid: 'OK with effort',      high: 'Effortless' },
+  cravings:          { type: 'rating', better: 'higher', label: 'Cravings',          question: 'How often do food cravings hit?',                              low: 'Constant',            mid: 'A few per day',       high: 'None' },
+  strength:          { type: 'rating', better: 'higher', label: 'Strength',          question: 'How strong do you feel in the gym?',                           low: 'Below baseline',      mid: 'Steady',              high: 'Noticeably stronger' },
+  skin:              { type: 'rating', better: 'higher', label: 'Skin',              question: 'How does your skin look and feel?',                            low: 'Dull, breaking out',  mid: 'Average',             high: 'Glowing, smooth' },
+  hair:              { type: 'rating', better: 'higher', label: 'Hair',              question: 'How is your hair density / growth?',                           low: 'Thinning',            mid: 'Holding',             high: 'Thickening' },
+  mood:              { type: 'rating', better: 'higher', label: 'Mood',              question: 'How is your mood day-to-day?',                                  low: 'Low, flat',           mid: 'Stable',              high: 'Consistently good' },
+  focus:             { type: 'rating', better: 'higher', label: 'Focus',             question: 'How is your ability to focus on a task?',                      low: 'Easily distracted',   mid: 'OK, drifts',          high: 'Laser-locked' },
+  memory:            { type: 'rating', better: 'higher', label: 'Memory',            question: 'How sharp is your recall?',                                     low: 'Foggy, blanking',     mid: 'OK with effort',      high: 'Sharp, easy recall' },
+  motivation:        { type: 'rating', better: 'higher', label: 'Motivation',        question: 'How motivated are you to start things?',                        low: 'Apathetic',           mid: 'Mixed',               high: 'Driven, on-it' },
+  stress:            { type: 'rating', better: 'higher', label: 'Stress resilience', question: 'How well do you handle stress?',                                low: 'Easily overwhelmed',  mid: 'OK',                  high: 'Roll with anything' },
+  libido:            { type: 'rating', better: 'higher', label: 'Libido',            question: 'How is your sex drive?',                                        low: 'Low',                 mid: 'Average',             high: 'High' },
+  mental_clarity:    { type: 'rating', better: 'higher', label: 'Mental clarity',    question: 'How clear is your day-to-day thinking?',                        low: 'Brain fog',           mid: 'Clear-ish',           high: 'Crystal clear' },
+  healing:           { type: 'rating', better: 'higher', label: 'Healing',           question: 'How is the injury or condition you started this for healing?', low: 'No progress',         mid: 'Slow progress',       high: 'Fully resolved' },
+
+  // Quantitative metrics. User enters numbers; we compute the delta with units.
+  weight:            { type: 'number', better: 'lower',  label: 'Weight',     question: "What's your weight?",                       unit: 'lbs', step: 0.1, placeholder: '173.4' },
+  waist:             { type: 'number', better: 'lower',  label: 'Waist',      question: "What's your waist measurement?",            unit: 'in',  step: 0.1, placeholder: '36.5' },
+  sleep_hours:       { type: 'number', better: 'higher', label: 'Sleep hrs',  question: 'How many hours do you sleep on average?',   unit: 'hr',  step: 0.1, placeholder: '7.0' },
+  workouts_per_wk:   { type: 'number', better: 'higher', label: 'Workouts',   question: 'How many strength workouts per week?',      unit: '/wk', step: 1,   placeholder: '3' },
+  squat:             { type: 'number', better: 'higher', label: 'Squat',      question: "What's your top working set on squat?",     unit: 'lbs', step: 5,   placeholder: '315' },
+  bench:             { type: 'number', better: 'higher', label: 'Bench',      question: "What's your top working set on bench?",     unit: 'lbs', step: 5,   placeholder: '225' },
+  deadlift:          { type: 'number', better: 'higher', label: 'Deadlift',   question: "What's your top working set on deadlift?",  unit: 'lbs', step: 5,   placeholder: '405' },
+};
+
+/* Each compound → weighted votes for which metrics it most affects.
+   When a stack is picked we sum weights across compounds and pick the top 4. */
+const COMPOUND_METRIC_WEIGHTS = {
+  bpc157:       { healing: 3, joint_comfort: 3, recovery: 2, sleep_quality: 1, workouts_per_wk: 1 },
+  tb500:        { recovery: 3, healing: 3, joint_comfort: 2, sleep_quality: 1, workouts_per_wk: 1 },
+  ghkcu:        { skin: 3, hair: 2, sleep_quality: 1, healing: 1, mood: 1 },
+  thymosina1:   { recovery: 2, mood: 1, energy_level: 1, sleep_quality: 1, workouts_per_wk: 1 },
+  cjc1295:      { sleep_quality: 3, recovery: 2, body_comp: 2, energy_level: 1, sleep_hours: 2, weight: 1 },
+  ipamorelin:   { sleep_quality: 3, recovery: 2, body_comp: 2, energy_level: 1, sleep_hours: 2, weight: 1 },
+  tesamorelin:  { body_comp: 3, energy_level: 2, sleep_quality: 1, weight: 2, waist: 2 },
+  sermorelin:   { sleep_quality: 3, recovery: 2, body_comp: 1, energy_level: 1, sleep_hours: 2 },
+  hexarelin:    { strength: 2, body_comp: 2, sleep_quality: 1, recovery: 1, squat: 1, bench: 1 },
+  ghrp2:        { sleep_quality: 2, body_comp: 2, recovery: 1, appetite_control: 1, sleep_hours: 1 },
+  ghrp6:        { appetite_control: 2, body_comp: 2, recovery: 1, sleep_quality: 1, weight: 1 },
+  igf1lr3:      { strength: 3, body_comp: 3, recovery: 2, squat: 2, bench: 2, deadlift: 2 },
+  semaglutide:  { appetite_control: 3, cravings: 3, body_comp: 3, energy_level: 1, weight: 3, waist: 2 },
+  tirzepatide:  { appetite_control: 3, cravings: 3, body_comp: 3, energy_level: 1, weight: 3, waist: 2 },
+  retatrutide:  { appetite_control: 3, cravings: 3, body_comp: 3, energy_level: 1, weight: 3, waist: 2 },
+  cagrilintide: { appetite_control: 2, cravings: 2, body_comp: 2, weight: 2, waist: 1 },
+  aod9604:      { body_comp: 3, energy_level: 1, weight: 2, waist: 1 },
+  motsc:        { energy_level: 3, recovery: 2, body_comp: 1, mental_clarity: 1, workouts_per_wk: 2 },
+  amino1mq:     { body_comp: 2, energy_level: 2, appetite_control: 1, weight: 2 },
+  tesofensine:  { appetite_control: 2, energy_level: 2, body_comp: 2, weight: 2 },
+  semax:        { focus: 3, memory: 2, motivation: 2, mood: 2, workouts_per_wk: 1 },
+  selank:       { mood: 3, stress: 3, sleep_quality: 2, focus: 1, sleep_hours: 2 },
+  dihexa:       { focus: 3, memory: 3, mental_clarity: 3, mood: 1 },
+  cerebrolysin: { memory: 3, mental_clarity: 3, mood: 2, sleep_quality: 1 },
+  epitalon:     { sleep_quality: 3, energy_level: 2, mood: 1, sleep_hours: 2 },
+  nadplus:      { energy_level: 3, mental_clarity: 2, mood: 1, workouts_per_wk: 1 },
+};
+
+/* ============================================================
+ * ACTIVE STACK (mock)
+ * Replace getActiveStack() with a Supabase fetch when wiring real data.
+ * The shape mirrors what /app/'s tracker stores per compound.
+ * ============================================================ */
+function getActiveStack() {
+  return {
+    cycleName: 'Recovery + Recomp',
+    startedDaysAgo: 21,
+    compounds: [
+      { slug: 'bpc157',     dose: '500 mcg', cadence: '2× daily',  goal: 'Shoulder tendinitis recovery' },
+      { slug: 'tb500',      dose: '2 mg',    cadence: '1× weekly', goal: 'Connective tissue support' },
+      { slug: 'cjc1295',    dose: '1 mg',    cadence: '2× weekly', goal: 'Sleep + body comp' },
+      { slug: 'ipamorelin', dose: '200 mcg', cadence: '5× weekly', goal: 'Sleep + body comp' },
+    ],
+  };
+}
+
+/* ============================================================
+ * STATE
+ * ============================================================ */
+const state = {
+  skipped: new Set(),
+  compoundMeta: {},  // slug → { startedWeek, stoppedWeek }
+  title: '',
+  weeks: { current: 1, total: 12 },
+  selectedSlugs: new Set(),
+  answers: {},   // metricId → { pre: number, post: number }
+  notes: '',
+  vendor: '',
+  purity: '',
+};
+
+const activeStack = getActiveStack();
+
+/* ============================================================
+ * QUESTION SELECTION — top 4 metrics by weighted vote across stack
+ * ============================================================ */
+
+function isAnswered(mid) {
+  if (state.skipped.has(mid)) return false;
+  const a = state.answers[mid];
+  if (!a) return false;
+  const m = METRICS[mid];
+  if (!m) return false;
+  if (m.type === 'number') {
+    const preOK = a.pre !== null && a.pre !== '' && a.pre !== undefined && !Number.isNaN(parseFloat(a.pre));
+    const postOK = a.post !== null && a.post !== '' && a.post !== undefined && !Number.isNaN(parseFloat(a.post));
+    return preOK && postOK;
+  }
+  return a.pre !== undefined && a.post !== undefined;
+}
+
+function pickMetricsForStack(slugs) {
+  if (slugs.length === 0) return [];
+  const scores = {};
+  slugs.forEach(slug => {
+    const weights = COMPOUND_METRIC_WEIGHTS[slug] || {};
+    Object.entries(weights).forEach(([metric, w]) => {
+      scores[metric] = (scores[metric] || 0) + w;
+    });
+  });
+  let top = Object.entries(scores)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([metricId]) => metricId);
+  // Pad with sensible defaults if fewer than 4 came back from weights.
+  const fallbacks = ['sleep_quality', 'energy_level', 'mood', 'body_comp', 'sleep_hours', 'workouts_per_wk', 'recovery', 'focus'];
+  fallbacks.forEach(f => { if (top.length < 4 && !top.includes(f)) top.push(f); });
+  return top.slice(0, 8);
+}
+
+/* ============================================================
+ * CARD PREVIEW BUILDER + RENDERER
+ * Builds a card data object from the current form state, then
+ * delegates to renderCard / renderConstellation / renderWeekDots.
+ * ============================================================ */
+function buildPreviewCard() {
+  const slugs = [...state.selectedSlugs];
+  const compounds = slugs.map(slug => {
+    const stackEntry = activeStack.compounds.find(c => c.slug === slug) || {};
+    const cmeta = state.compoundMeta[slug] || {};
+    return {
+      slug,
+      dose: stackEntry.dose || '—',
+      cadence: stackEntry.cadence || '',
+      startedWeek: cmeta.startedWeek || 1,
+      stoppedWeek: cmeta.stoppedWeek != null ? cmeta.stoppedWeek : null,
+    };
+  });
+  const allMetricIds = pickMetricsForStack(slugs);
+  const metricIds = allMetricIds.filter(mid => isAnswered(mid));
+  const stats = metricIds.map(mid => {
+    const m = METRICS[mid];
+    if (!m) return { label: mid, delta: '—', unit: '', pre: '—', post: '—', dir: 'zero' };
+    const isNumber = m.type === 'number';
+    const defaults = isNumber ? { pre: null, post: null } : { pre: 5, post: 5 };
+    const a = state.answers[mid] || defaults;
+    if (isNumber) {
+      const pre = (a.pre === null || a.pre === '' || a.pre === undefined) ? null : parseFloat(a.pre);
+      const post = (a.post === null || a.post === '' || a.post === undefined) ? null : parseFloat(a.post);
+      if (pre === null || post === null || Number.isNaN(pre) || Number.isNaN(post)) {
+        return { label: m.label, delta: '—', unit: m.unit, pre: '—', post: '—', dir: 'zero' };
+      }
+      const d = post - pre;
+      const decimals = m.step < 1 ? 1 : 0;
+      const sign = d > 0 ? '+' : '';
+      const improving = (m.better === 'higher' && d > 0) || (m.better === 'lower' && d < 0);
+      const dir = d === 0 ? 'zero' : (improving ? 'pos' : 'neg');
+      return { label: m.label, delta: sign + d.toFixed(decimals), unit: m.unit, pre: pre.toFixed(decimals), post: post.toFixed(decimals), dir };
+    }
+    const pre = a.pre ?? 5;
+    const post = a.post ?? 5;
+    const d = post - pre;
+    return { label: m.label, delta: (d > 0 ? '+' : '') + d, unit: '', pre: pre + '/10', post: post + '/10', dir: d === 0 ? 'zero' : (d > 0 ? 'pos' : 'neg') };
+  });
+  return {
+    title: state.title.trim() || 'Untitled protocol',
+    setId: 'NEW',
+    tier: 'common',
+    weeks: state.weeks.total,
+    weekProgress: state.weeks.current,
+    compounds,
+    notes: state.notes.trim() || 'Notes will appear here as you write them.',
+    stats,
+    vendor: state.vendor.trim() || '—',
+    verified: !!state.purity.trim(),
+    logs: 0,
+  };
+}
+
+
+function weekTagText(c) {
+  const start = c.startedWeek || 1;
+  const stop = (c.stoppedWeek != null) ? c.stoppedWeek : null;
+  if (start === 1 && stop == null) return '';
+  if (start > 1 && stop == null) return ' · started W' + start;
+  if (start === 1 && stop != null) return ' · ended W' + stop;
+  return ' · W' + start + '–W' + stop;
+}
+
+function renderConstellation(compounds, currentWeek) {
+  const positions = {
+    1: [ { x: 50, y: 50 } ],
+    2: [ { x: 35, y: 50 }, { x: 65, y: 50 } ],
+    3: [ { x: 50, y: 28 }, { x: 30, y: 68 }, { x: 70, y: 68 } ],
+    4: [ { x: 30, y: 32 }, { x: 70, y: 32 }, { x: 30, y: 68 }, { x: 70, y: 68 } ],
+  };
+  const n = Math.min(compounds.length, 4);
+  if (n === 0) return '<svg class="art-svg" viewBox="0 0 100 100"></svg>';
+  const layout = positions[n];
+  const lines = [];
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const a = COMPOUND[compounds[i].slug];
+      const b = COMPOUND[compounds[j].slug];
+      if (!a || !b) continue;
+      const sameType = a.type === b.type;
+      lines.push({ x1: layout[i].x, y1: layout[i].y, x2: layout[j].x, y2: layout[j].y, sameType, type: sameType ? a.type : null });
+    }
+  }
+  const linesHtml = lines.map(L => {
+    const color = L.sameType ? TYPE_COLOR[L.type] : '#3a3a3a';
+    const dash = L.sameType ? '0' : '2 3';
+    const opacity = L.sameType ? '0.55' : '0.35';
+    return `<line x1="${L.x1}" y1="${L.y1}" x2="${L.x2}" y2="${L.y2}" stroke="${color}" stroke-width="0.6" stroke-dasharray="${dash}" opacity="${opacity}" stroke-linecap="round"/>`;
+  }).join('');
+  const glyphSize = n >= 3 ? 30 : 36;
+  const half = glyphSize / 2;
+  const glyphsHtml = compounds.slice(0, n).map((c, i) => {
+    const meta = COMPOUND[c.slug];
+    const color = meta ? TYPE_COLOR[meta.type] : 'var(--muted)';
+    const inner = GLYPH[c.slug] || `<circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="2"/>`;
+    const px = layout[i].x - half;
+    const py = layout[i].y - half;
+    const startedWeek = c.startedWeek || 1;
+    const stoppedWeek = (c.stoppedWeek != null) ? c.stoppedWeek : null;
+    const cw = (typeof currentWeek === 'number' && currentWeek > 0) ? currentWeek : startedWeek;
+    const stopFor = stoppedWeek != null ? stoppedWeek : cw;
+    const weeksUsed = Math.max(0, stopFor - startedWeek + 1);
+    // Constellation badge (top-right of glyph bbox) — only on late-add or stopped
+    let badgeHtml = '';
+    if (startedWeek > 1 || stoppedWeek != null) {
+      let badgeText, badgeBg;
+      if (startedWeek > 1 && stoppedWeek == null) {
+        badgeText = '+W' + startedWeek; badgeBg = '#fbbf24';
+      } else if (startedWeek === 1 && stoppedWeek != null) {
+        badgeText = '↡W' + stoppedWeek; badgeBg = '#737373';
+      } else {
+        badgeText = 'W' + startedWeek + '–' + stoppedWeek; badgeBg = '#fbbf24';
+      }
+      const bAnchorX = layout[i].x + half - 1;
+      const bAnchorY = layout[i].y - half + 0.5;
+      const bW = badgeText.length * 2.2 + 3;
+      badgeHtml = `<g pointer-events="none"><rect x="${bAnchorX - bW}" y="${bAnchorY}" width="${bW}" height="5" rx="1.4" fill="${badgeBg}" stroke="#0a0a0a" stroke-width="0.35"/><text x="${bAnchorX - bW/2}" y="${bAnchorY + 3.6}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="2.9" font-weight="700" fill="#0a0a0a">${badgeText}</text></g>`;
+    }
+    // Two-line hover tooltip: compound name + weeks-used
+    const tipName = meta ? meta.display : '';
+    const tipWeeks = weeksUsed === 1 ? '1 wk used' : weeksUsed + ' wks used';
+    const tipW = Math.max(Math.max(tipName.length, tipWeeks.length) * 2.4 + 6, 16);
+    const tipX = layout[i].x - tipW / 2;
+    const tipY = layout[i].y + half + 6;
+    return `<g class="glyph-group">
+      <rect x="${px}" y="${py}" width="${glyphSize}" height="${glyphSize}" fill="transparent" pointer-events="all"/>
+      <svg x="${px}" y="${py}" width="${glyphSize}" height="${glyphSize}" viewBox="0 0 100 100" style="color: ${color}; overflow: visible; pointer-events: none;">${inner}</svg>
+      ${badgeHtml}
+      <rect class="glyph-label-bg" x="${tipX}" y="${tipY - 1}" width="${tipW}" height="9.6" rx="2" fill="#0a0a0a" stroke="${color}" stroke-width="0.35"/>
+      <text class="glyph-label" x="${layout[i].x}" y="${tipY + 3}" text-anchor="middle" fill="${color}" font-family="JetBrains Mono, monospace" font-size="3.6" font-weight="600">${tipName}</text>
+      <text class="glyph-label" x="${layout[i].x}" y="${tipY + 7.6}" text-anchor="middle" fill="#a3a3a3" font-family="JetBrains Mono, monospace" font-size="3" opacity="0.85">${tipWeeks}</text>
+    </g>`;
+  }).join('');
+  return `<svg class="art-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">${linesHtml}${glyphsHtml}</svg>`;
+}
+
+function renderWeekDots(weeks, progress) {
+  const total = Math.min(weeks, 12);
+  let html = '';
+  for (let i = 0; i < total; i++) {
+    const scaled = Math.round((i + 1) * (weeks / total));
+    if (scaled < progress) html += `<div class="week-dot filled"></div>`;
+    else if (scaled === progress && progress < weeks) html += `<div class="week-dot current"></div>`;
+    else if (scaled <= progress) html += `<div class="week-dot filled"></div>`;
+    else html += `<div class="week-dot"></div>`;
+  }
+  return html;
+}
+
+function renderTypeLine(compounds) {
+  const types = [...new Set(compounds.map(c => COMPOUND[c.slug]?.type).filter(Boolean))];
+  if (types.length === 0) return '<span style="color: var(--muted-2); text-transform: none; letter-spacing: 0; font-style: italic; font-size: 11px;">pick a compound below…</span>';
+  return types.map(t => `<span class="type-pill ${t}">${TYPE_LABEL[t]}</span>`).join('<span style="color: var(--border);">×</span>');
+}
+
+function renderCard(card) {
+  const inProgress = card.weekProgress < card.weeks;
+  return `
+    <div class="card">
+      <div class="card-toprail"></div>
+      <div class="card-header">
+        <div class="card-titleblock">
+          <div class="card-title">${escapeHtml(card.title)}</div>
+          <div class="card-typeline">
+            ${renderTypeLine(card.compounds)}
+            <span class="card-setid">· ${card.setId}</span>
+          </div>
+        </div>
+        <div class="cost-ring ${inProgress ? 'in-progress' : ''}">
+          <div class="cost-ring-num">${card.weekProgress}/${card.weeks}</div>
+          <div class="cost-ring-label">WEEKS</div>
+        </div>
+      </div>
+      <div class="card-art">
+        <div class="art-tick tl"></div><div class="art-tick tr"></div>
+        <div class="art-tick bl"></div><div class="art-tick br"></div>
+        ${renderConstellation(card.compounds, card.weekProgress)}
+        ${card.compounds.length > 0 ? `<div class="week-grid">${renderWeekDots(card.weeks, card.weekProgress)}</div>` : `<div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted-2); font-size: 12px; font-style: italic;">your stack appears here</div>`}
+      </div>
+      <div class="compounds">
+        ${card.compounds.map(c => {
+          const meta = COMPOUND[c.slug];
+          if (!meta) return '';
+          return `
+            <div class="compound-row">
+              <div class="compound-name" style="color: ${TYPE_COLOR[meta.type]};">${meta.display}</div>
+              <div class="compound-move">${meta.move}</div>
+              <div class="compound-dose">${escapeHtml(c.dose)}${c.cadence ? ' · ' + escapeHtml(c.cadence) : ''}${weekTagText(c)}</div>
+            </div>
+          `;
+        }).join('') || '<div style="color: var(--muted-2); font-size: 13px; text-align: center; padding: 8px 0;">Pick a compound to see it here</div>'}
+      </div>
+      <div class="flavor">${escapeHtml(card.notes)}</div>
+      <div class="stats" style="grid-template-columns: repeat(${Math.max(Math.min(card.stats.length, 4), 1)}, 1fr);">
+        ${card.stats.map(s => `
+          <div class="stat">
+            <div class="stat-label">${escapeHtml(s.label)}</div>
+            <div class="stat-delta ${s.dir}">${s.delta}${s.unit ? `<span style="font-size: 9px; font-weight: 500; color: var(--muted-2); margin-left: 2px;">${s.unit}</span>` : ''}</div>
+            <div class="stat-meta">${s.pre} → ${s.post}</div>
+          </div>
+        `).join('') || '<div style="grid-column: 1 / -1; padding: 12px 8px; text-align: center; color: var(--muted-2); font-size: 12px;">Outcomes will show here as you answer below</div>'}
+      </div>
+      <div class="card-footer">
+        <span>${escapeHtml(card.vendor)}</span>
+        <span class="dot">·</span>
+        <span class="${card.verified ? 'verified' : ''}">${card.verified ? 'lot verified ✓' : 'unverified'}</span>
+        <span class="dot">·</span>
+        <span>${card.logs} logs</span>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+/* ============================================================
+ * RENDER — form & preview
+ * ============================================================ */
+function renderStackPicker() {
+  const mount = document.getElementById('stack-picker');
+  if (activeStack.compounds.length === 0) {
+    mount.innerHTML = `<div class="stack-empty">No active stack yet. <a href="/app/" style="color: var(--accent);">Add compounds to your stack first.</a></div>`;
+    return;
+  }
+  mount.innerHTML = activeStack.compounds.map(c => {
+    const meta = COMPOUND[c.slug];
+    const isSelected = state.selectedSlugs.has(c.slug);
+    const cmeta = state.compoundMeta[c.slug] || {};
+    const totalWeeks = state.weeks.total || 12;
+    const weeksRow = isSelected ? `
+      <div class="compound-weeks-row" data-slug="${c.slug}">
+        <span class="weeks-label">Started week</span>
+        <input type="number" class="weeks-input" min="1" max="${totalWeeks}" step="1" value="${cmeta.startedWeek || 1}" data-slug="${c.slug}" data-field="startedWeek">
+        <span class="weeks-divider">·</span>
+        <span class="weeks-label">Stopped at week</span>
+        <input type="number" class="weeks-input" min="1" max="${totalWeeks}" step="1" value="${cmeta.stoppedWeek != null ? cmeta.stoppedWeek : ''}" data-slug="${c.slug}" data-field="stoppedWeek" placeholder="—">
+        <span class="weeks-hint">leave blank if still running</span>
+      </div>
+    ` : '';
+    return `
+      <div class="compound-pick ${isSelected ? 'selected' : ''}" data-slug="${c.slug}">
+        <span class="compound-pick-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <div class="compound-pick-body">
+          <div class="compound-pick-name">${meta ? meta.display : c.slug}</div>
+          <div class="compound-pick-meta">${escapeHtml(c.dose)} · ${escapeHtml(c.cadence)}${c.goal ? ' · ' + escapeHtml(c.goal) : ''}</div>
+        </div>
+        <span class="compound-pick-type ${meta ? meta.type : ''}">${meta ? TYPE_LABEL[meta.type] : ''}</span>
+      </div>
+      ${weeksRow}
+    `;
+  }).join('');
+  // Wire pick toggle (avoid toggling when clicking inside the weeks-row inputs)
+  mount.querySelectorAll('.compound-pick').forEach(el => {
+    el.addEventListener('click', (ev) => {
+      if (ev.target.closest('.compound-weeks-row')) return;
+      const slug = el.dataset.slug;
+      if (state.selectedSlugs.has(slug)) {
+        state.selectedSlugs.delete(slug);
+        delete state.compoundMeta[slug];
+      } else {
+        state.selectedSlugs.add(slug);
+        if (!state.compoundMeta[slug]) {
+          // Smart default: if we're past week 1, suggest current week as start
+          const cur = state.weeks.current || 1;
+          state.compoundMeta[slug] = { startedWeek: 1, stoppedWeek: null };
+          // (Leave the default at W1; user can change. Auto-suggest disabled
+          // to avoid surprising people.)
+        }
+      }
+      renderStackPicker();
+      renderQuestions();
+      renderPreview();
+      updateValidation();
+    });
+  });
+  // Wire week-input changes
+  mount.querySelectorAll('.weeks-input').forEach(input => {
+    input.addEventListener('input', e => {
+      e.stopPropagation();
+      const slug = input.dataset.slug;
+      const field = input.dataset.field;
+      const raw = input.value;
+      if (!state.compoundMeta[slug]) state.compoundMeta[slug] = {};
+      if (raw === '' || raw == null) {
+        state.compoundMeta[slug][field] = field === 'stoppedWeek' ? null : 1;
+      } else {
+        const n = parseInt(raw, 10);
+        if (!Number.isNaN(n) && n > 0) state.compoundMeta[slug][field] = n;
+      }
+      renderPreview();
+    });
+    // prevent click from bubbling to the pick toggle
+    input.addEventListener('click', e => e.stopPropagation());
+  });
+}
+
+function renderQuestions() {
+  const mount = document.getElementById('questions-mount');
+  const metricIds = pickMetricsForStack([...state.selectedSlugs]);
+  if (state.selectedSlugs.size === 0) {
+    mount.innerHTML = `<div class="questions-empty">Pick at least one compound above to see your outcome questions.</div>`;
+    return;
+  }
+  mount.innerHTML = metricIds.map((mid, idx) => {
+    const m = METRICS[mid];
+    if (!m) return '';
+    const isSkipped = state.skipped.has(mid);
+    if (isSkipped) {
+      return `
+        <div class="question-block skipped" data-metric="${mid}">
+          <div class="question-head">
+            <div class="question-label">Q${idx + 1} · ${escapeHtml(m.label)} <span style="color: var(--muted-2); text-transform: none; letter-spacing: 0;">— skipped, won't show on your card</span></div>
+            <button class="skip-btn" data-action="unskip">Undo</button>
+          </div>
+        </div>
+      `;
+    }
+    const isNumber = m.type === 'number';
+    const defaults = isNumber ? { pre: '', post: '' } : { pre: 5, post: 5 };
+    const a = state.answers[mid] || defaults;
+    const dirStr = computeDir(m, a.pre, a.post);
+    const deltaStr = computeDeltaStr(m, a.pre, a.post);
+    if (isNumber) {
+      return `
+        <div class="question-block" data-metric="${mid}" data-type="number">
+          <div class="question-head">
+            <div class="question-label">Q${idx + 1} · ${escapeHtml(m.label)}</div>
+            <button class="skip-btn" data-action="skip">Skip</button>
+          </div>
+          <div class="question-text">${escapeHtml(m.question)}</div>
+          <div class="question-sliders">
+            <div class="slider-block">
+              <div class="slider-head">
+                <span class="slider-head-label">Before</span>
+                <span class="num-suffix">${escapeHtml(m.unit)}</span>
+              </div>
+              <input type="number" class="num-input" data-role="pre" step="${m.step}" placeholder="${escapeHtml(m.placeholder || '—')}" value="${a.pre ?? ''}">
+            </div>
+            <div class="slider-block">
+              <div class="slider-head">
+                <span class="slider-head-label">Now (week ${state.weeks.current})</span>
+                <span class="num-suffix">${escapeHtml(m.unit)}</span>
+              </div>
+              <input type="number" class="num-input" data-role="post" step="${m.step}" placeholder="${escapeHtml(m.placeholder || '—')}" value="${a.post ?? ''}">
+            </div>
+          </div>
+          <div class="delta-badge ${dirStr}" data-delta>${deltaStr}</div>
+        </div>
+      `;
+    }
+    return `
+      <div class="question-block" data-metric="${mid}" data-type="rating">
+        <div class="question-head">
+          <div class="question-label">Q${idx + 1} · ${escapeHtml(m.label)}</div>
+          <button class="skip-btn" data-action="skip">Skip</button>
+        </div>
+        <div class="question-text">${escapeHtml(m.question)}</div>
+        <div class="question-sliders">
+          <div class="slider-block">
+            <div class="slider-head">
+              <span class="slider-head-label">Before</span>
+              <span class="slider-head-value" data-pre-val>${a.pre}<span class="denom">/10</span></span>
+            </div>
+            <input type="range" class="lms-slider" data-role="pre" min="1" max="10" step="1" value="${a.pre}">
+            <div class="slider-anchors"><span>${escapeHtml(m.low)}</span><span>${escapeHtml(m.mid)}</span><span>${escapeHtml(m.high)}</span></div>
+          </div>
+          <div class="slider-block">
+            <div class="slider-head">
+              <span class="slider-head-label">Now (week ${state.weeks.current})</span>
+              <span class="slider-head-value" data-post-val>${a.post}<span class="denom">/10</span></span>
+            </div>
+            <input type="range" class="lms-slider" data-role="post" min="1" max="10" step="1" value="${a.post}">
+            <div class="slider-anchors"><span>${escapeHtml(m.low)}</span><span>${escapeHtml(m.mid)}</span><span>${escapeHtml(m.high)}</span></div>
+          </div>
+        </div>
+        <div class="delta-badge ${dirStr}" data-delta>${deltaStr}</div>
+      </div>
+    `;
+  }).join('');
+  mount.querySelectorAll('.skip-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      const block = btn.closest('.question-block');
+      const mid = block.dataset.metric;
+      const action = btn.dataset.action;
+      if (action === 'skip') {
+        state.skipped.add(mid);
+        delete state.answers[mid];
+      } else {
+        state.skipped.delete(mid);
+      }
+      renderQuestions();
+      renderPreview();
+      updateValidation();
+    });
+  });
+  mount.querySelectorAll('.question-block').forEach(block => {
+    if (block.classList.contains('skipped')) return;
+    const mid = block.dataset.metric;
+    const isNumber = block.dataset.type === 'number';
+    const m = METRICS[mid];
+    const preEl = block.querySelector('[data-role="pre"]');
+    const postEl = block.querySelector('[data-role="post"]');
+    if (!preEl || !postEl) return;
+    const preVal = block.querySelector('[data-pre-val]');
+    const postVal = block.querySelector('[data-post-val]');
+    const deltaBadge = block.querySelector('[data-delta]');
+    const handler = () => {
+      let pre, post;
+      if (isNumber) {
+        pre = preEl.value === '' ? null : parseFloat(preEl.value);
+        post = postEl.value === '' ? null : parseFloat(postEl.value);
+      } else {
+        pre = parseInt(preEl.value, 10);
+        post = parseInt(postEl.value, 10);
+        if (preVal) preVal.innerHTML = pre + '<span class="denom">/10</span>';
+        if (postVal) postVal.innerHTML = post + '<span class="denom">/10</span>';
+      }
+      state.answers[mid] = { pre, post };
+      deltaBadge.textContent = computeDeltaStr(m, pre, post);
+      deltaBadge.className = 'delta-badge ' + computeDir(m, pre, post);
+      renderPreview();
+      updateValidation();
+    };
+    preEl.addEventListener('input', handler);
+    postEl.addEventListener('input', handler);
+  });
+}
+
+function computeDir(m, pre, post) {
+  if (pre === null || pre === '' || pre === undefined || post === null || post === '' || post === undefined) return '';
+  const preN = typeof pre === 'number' ? pre : parseFloat(pre);
+  const postN = typeof post === 'number' ? post : parseFloat(post);
+  if (Number.isNaN(preN) || Number.isNaN(postN)) return '';
+  const d = postN - preN;
+  if (d === 0) return '';
+  const better = m.better || 'higher';
+  const improving = (better === 'higher' && d > 0) || (better === 'lower' && d < 0);
+  return improving ? 'pos' : 'neg';
+}
+function computeDeltaStr(m, pre, post) {
+  if (pre === null || pre === '' || pre === undefined || post === null || post === '' || post === undefined) return '—';
+  const preN = typeof pre === 'number' ? pre : parseFloat(pre);
+  const postN = typeof post === 'number' ? post : parseFloat(post);
+  if (Number.isNaN(preN) || Number.isNaN(postN)) return '—';
+  const d = postN - preN;
+  if (m.type === 'number') {
+    const decimals = m.step < 1 ? 1 : 0;
+    const sign = d > 0 ? '+' : '';
+    return `${sign}${d.toFixed(decimals)} ${m.unit}`;
+  }
+  const sign = d > 0 ? '+' : '';
+  return `${sign}${d} pt${Math.abs(d) === 1 ? '' : 's'}`;
+}
+
+function computeDir(m, pre, post) {
+  if (pre === null || pre === '' || pre === undefined || post === null || post === '' || post === undefined) return '';
+  const preN = typeof pre === 'number' ? pre : parseFloat(pre);
+  const postN = typeof post === 'number' ? post : parseFloat(post);
+  if (Number.isNaN(preN) || Number.isNaN(postN)) return '';
+  const d = postN - preN;
+  if (d === 0) return '';
+  const better = m.better || 'higher';
+  const improving = (better === 'higher' && d > 0) || (better === 'lower' && d < 0);
+  return improving ? 'pos' : 'neg';
+}
+function computeDeltaStr(m, pre, post) {
+  if (pre === null || pre === '' || pre === undefined || post === null || post === '' || post === undefined) return '—';
+  const preN = typeof pre === 'number' ? pre : parseFloat(pre);
+  const postN = typeof post === 'number' ? post : parseFloat(post);
+  if (Number.isNaN(preN) || Number.isNaN(postN)) return '—';
+  const d = postN - preN;
+  if (m.type === 'number') {
+    const decimals = m.step < 1 ? 1 : 0;
+    const sign = d > 0 ? '+' : '';
+    return `${sign}${d.toFixed(decimals)} ${m.unit}`;
+  }
+  const sign = d > 0 ? '+' : '';
+  return `${sign}${d} pt${Math.abs(d) === 1 ? '' : 's'}`;
+}
+
+function renderPreview() {
+  document.getElementById('preview-mount').innerHTML = renderCard(buildPreviewCard());
+}
+
+function updateValidation() {
+  const post = document.getElementById('btn-post');
+  const msg = document.getElementById('validation-msg');
+  const missing = [];
+  if (!state.title.trim()) missing.push('a title');
+  if (state.selectedSlugs.size === 0) missing.push('at least 1 compound');
+  const allMetricIds = pickMetricsForStack([...state.selectedSlugs]);
+  const answered = allMetricIds.filter(isAnswered).length;
+  if (state.selectedSlugs.size > 0 && answered < 2) {
+    missing.push(`answer at least 2 questions (you have ${answered})`);
+  }
+  if (missing.length === 0) {
+    post.disabled = false;
+    msg.classList.remove('error');
+    msg.textContent = `Ready to post — ${answered} outcome${answered === 1 ? '' : 's'} answered.`;
+  } else {
+    post.disabled = true;
+    msg.classList.add('error');
+    msg.textContent = `Still need: ${missing.join(' + ')}.`;
+  }
+}
+
+/* ============================================================
+ * INPUT BINDINGS
+ * ============================================================ */
+document.getElementById('f-title').addEventListener('input', e => {
+  state.title = e.target.value;
+  renderPreview();
+  updateValidation();
+});
+document.getElementById('f-week-current').addEventListener('input', e => {
+  state.weeks.current = Math.max(1, parseInt(e.target.value, 10) || 1);
+  renderPreview();
+  renderQuestions();
+});
+document.getElementById('f-week-total').addEventListener('input', e => {
+  state.weeks.total = Math.max(1, parseInt(e.target.value, 10) || 1);
+  renderPreview();
+});
+document.getElementById('f-notes').addEventListener('input', e => {
+  state.notes = e.target.value;
+  renderPreview();
+});
+document.getElementById('f-vendor').addEventListener('input', e => {
+  state.vendor = e.target.value;
+  renderPreview();
+});
+document.getElementById('f-purity').addEventListener('input', e => {
+  state.purity = e.target.value;
+  renderPreview();
+});
+
+/* ============================================================
+ * SUBMIT — Post / Save as draft
+ * Cards persist to localStorage so the feed can surface them.
+ * ============================================================ */
+function buildCardForSave(visibility) {
+  const c = buildPreviewCard();
+  return {
+    ...c,
+    id: 'user-card-' + Date.now(),
+    setId: visibility === 'public' ? generateSetId(c) : 'DRAFT',
+    visibility,
+    author: 'you',                  // TODO: pull real handle when wiring Supabase
+    age: 'just now',
+    likes: 0, comments: 0, saved: false, liked: false,
+    savedAt: new Date().toISOString(),
+  };
+}
+
+function generateSetId(card) {
+  // Loose convention: 2-letter prefix from dominant type + 3-digit hash.
+  const types = card.compounds.map(c => COMPOUND[c.slug]?.type).filter(Boolean);
+  const counts = {};
+  types.forEach(t => counts[t] = (counts[t] || 0) + 1);
+  const top = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0] || 'gen';
+  const prefix = { healing: 'HR', glp1: 'GM', gh: 'GH', cognitive: 'CG', metabolic: 'MM', gen: 'NX' }[top] || 'NX';
+  const num = (Math.floor(Math.random() * 900) + 100);
+  return `${prefix}-${num}`;
+}
+
+function persist(key, card) {
+  let arr;
+  try { arr = JSON.parse(localStorage.getItem(key) || '[]'); }
+  catch { arr = []; }
+  arr.unshift(card);
+  localStorage.setItem(key, JSON.stringify(arr));
+}
+
+function showToast(text) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = text;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+document.getElementById('btn-post').addEventListener('click', () => {
+  const card = buildCardForSave('public');
+  persist('lms_published', card);
+  // Brief toast then redirect so the user sees their card appear at the top of the feed.
+  showToast('Posted to feed →');
+  setTimeout(() => { location.href = '/app/feed/'; }, 700);
+});
+document.getElementById('btn-draft').addEventListener('click', () => {
+  const card = buildCardForSave('draft');
+  persist('lms_drafts', card);
+  showToast('Saved as draft');
+});
+
+/* ============================================================
+ * INIT
+ * ============================================================ */
+renderStackPicker();
+renderQuestions();
+renderPreview();
+updateValidation();
+
+/* ============================================================
+ * EDIT MODE — when URL has ?edit=<cardId>, look up the card in
+ * lms_published or lms_drafts and pre-fill the form. On submit,
+ * we replace the existing card in localStorage rather than
+ * unshifting a new one.
+ * ============================================================ */
+function loadCardForEdit(id) {
+  function read(key) {
+    try { return JSON.parse(localStorage.getItem(key) || '[]'); }
+    catch { return []; }
+  }
+  for (const c of read('lms_published')) {
+    if (c.id === id) return { card: c, source: 'lms_published' };
+  }
+  for (const c of read('lms_drafts')) {
+    if (c.id === id) return { card: c, source: 'lms_drafts' };
+  }
+  return null;
+}
+
+const editParam = new URLSearchParams(location.search).get('edit');
+let editContext = null; // { card, source }
+
+function applyEditPrefill() {
+  if (!editParam) return;
+  const found = loadCardForEdit(editParam);
+  if (!found) {
+    console.warn('Edit: card not found for id', editParam);
+    return;
+  }
+  editContext = found;
+  const card = found.card;
+
+  // State pre-fill
+  state.title = card.title || '';
+  state.weeks = { current: card.weekProgress || 1, total: card.weeks || 12 };
+  state.selectedSlugs = new Set((card.compounds || []).map(c => c.slug));
+  state.notes = card.notes || '';
+  state.vendor = card.vendor && card.vendor !== '—' ? card.vendor : '';
+  state.purity = card.verified ? '98%' : '';
+
+  // Reverse-map stats back to answers
+  (card.stats || []).forEach(s => {
+    const mid = Object.keys(METRICS).find(k => METRICS[k].label === s.label);
+    if (!mid) return;
+    const m = METRICS[mid];
+    if (m.type === 'number') {
+      const pre = parseFloat(s.pre); const post = parseFloat(s.post);
+      if (!Number.isNaN(pre) && !Number.isNaN(post)) state.answers[mid] = { pre, post };
+    } else {
+      const pre = parseInt(s.pre, 10); const post = parseInt(s.post, 10);
+      if (!Number.isNaN(pre) && !Number.isNaN(post)) state.answers[mid] = { pre, post };
+    }
+  });
+  // Augment active stack with compounds from the card that aren't in the
+  // mock active stack — otherwise the picker can't show them.
+  (card.compounds || []).forEach(c => {
+    if (!activeStack.compounds.find(ac => ac.slug === c.slug)) {
+      activeStack.compounds.push({
+        slug: c.slug,
+        dose: c.dose || '—',
+        cadence: c.cadence || '',
+        goal: '',
+      });
+    }
+    // Restore startedWeek/stoppedWeek into compoundMeta state
+    state.compoundMeta[c.slug] = {
+      startedWeek: c.startedWeek || 1,
+      stoppedWeek: c.stoppedWeek != null ? c.stoppedWeek : null,
+    };
+  });
+  // Infer skipped: any metric pickMetricsForStack would surface but that's
+  // not in the saved stats (means the user skipped it last time).
+  const expected = pickMetricsForStack([...state.selectedSlugs]);
+  const answeredIds = new Set(Object.keys(state.answers));
+  expected.forEach(mid => {
+    if (!answeredIds.has(mid)) state.skipped.add(mid);
+  });
+
+  // DOM pre-fill
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  setVal('f-title', state.title);
+  setVal('f-week-current', state.weeks.current);
+  setVal('f-week-total', state.weeks.total);
+  setVal('f-notes', state.notes);
+  setVal('f-vendor', state.vendor);
+  setVal('f-purity', state.purity);
+
+  // UI: page header copy + button labels
+  const eyebrow = document.querySelector('.page-eyebrow');
+  if (eyebrow) eyebrow.textContent = 'Edit card';
+  const h1 = document.querySelector('.page-h1');
+  if (h1) h1.textContent = card.visibility === 'draft' ? 'Edit your draft.' : 'Edit your card.';
+  const sub = document.querySelector('.page-sub');
+  if (sub) sub.textContent = card.visibility === 'draft'
+    ? "Update your draft. Publish when you're ready to share."
+    : "Update your data — changes go live to the feed when you save.";
+  const btnPost = document.getElementById('btn-post');
+  if (btnPost) btnPost.textContent = card.visibility === 'draft' ? 'Publish' : 'Update post';
+  const btnDraft = document.getElementById('btn-draft');
+  if (btnDraft) btnDraft.textContent = 'Save changes';
+}
+
+// Patch the submit-card path so editing updates in place.
+const originalBuildCardForSave = buildCardForSave;
+buildCardForSave = function(visibility) {
+  const card = originalBuildCardForSave(visibility);
+  if (editContext) {
+    // Preserve identifying + history fields
+    card.id = editContext.card.id;
+    card.author = editContext.card.author || 'you';
+    card.likes = editContext.card.likes || 0;
+    card.comments = editContext.card.comments || 0;
+    card.setId = editContext.card.setId || card.setId;
+    card.publishedAt = editContext.card.publishedAt || card.publishedAt;
+  }
+  return card;
+};
+
+const originalPersist = persist;
+persist = function(key, card) {
+  if (editContext) {
+    // Remove from old source first, then write to new key
+    const oldKey = editContext.source;
+    try {
+      const old = JSON.parse(localStorage.getItem(oldKey) || '[]').filter(c => c.id !== card.id);
+      localStorage.setItem(oldKey, JSON.stringify(old));
+    } catch {}
+  }
+  originalPersist(key, card);
+};
+
+// Run the prefill once everything else is initialized.
+applyEditPrefill();
+if (editContext) {
+  // Re-render the picker/questions/preview/validation now that state is set
+  renderStackPicker();
+  renderQuestions();
+  renderPreview();
+  updateValidation();
+}
+</script>
+
+</body>
+</html>
