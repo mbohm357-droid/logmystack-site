@@ -19,6 +19,8 @@
     extract to /app/shared/card.{js,css} once design has stabilized.
 -->
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="/app/_auth.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -801,16 +803,52 @@ const COMPOUND_METRIC_WEIGHTS = {
  * Replace getActiveStack() with a Supabase fetch when wiring real data.
  * The shape mirrors what /app/'s tracker stores per compound.
  * ============================================================ */
+// Build a lowercase-alphanum normalized display-name → slug map from
+// our COMPOUND library, used to translate the user's actual logged
+// compounds (which have free-text names like "BPC-157") to our slugs.
+const NAME_TO_SLUG = (function () {
+  const m = {};
+  Object.entries(COMPOUND).forEach(([slug, meta]) => {
+    const norm = (meta.display || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (norm) m[norm] = slug;
+  });
+  return m;
+})();
+function nameToSlug(name) {
+  if (!name) return null;
+  const norm = String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
+  return NAME_TO_SLUG[norm] || null;
+}
+
+// getActiveStack pulls from Supabase user_data.data.stacks via _auth.js.
+// Falls back to an empty stack until auth completes — the picker shows
+// an empty state in that case.
 function getActiveStack() {
+  const ud = (window.lms && window.lms.currentUserData) || null;
+  if (!ud || !Array.isArray(ud.stacks) || ud.stacks.length === 0) {
+    return { cycleName: 'No active stack', startedDaysAgo: 0, compounds: [] };
+  }
+  const active = ud.stacks.find(s => s.id === ud.activeStackId) || ud.stacks[0];
+  if (!active) {
+    return { cycleName: 'No active stack', startedDaysAgo: 0, compounds: [] };
+  }
+  const started = active.startDate ? Math.floor((Date.now() - new Date(active.startDate).getTime()) / 86400000) : 0;
+  const compounds = (active.compounds || [])
+    .map(c => {
+      const slug = nameToSlug(c.name);
+      if (!slug) return null;  // skip compounds outside our library for now
+      return {
+        slug,
+        dose: c.dose || '—',
+        cadence: c.frequency || c.cadence || '',
+        goal: c.goal || '',
+      };
+    })
+    .filter(Boolean);
   return {
-    cycleName: 'Recovery + Recomp',
-    startedDaysAgo: 21,
-    compounds: [
-      { slug: 'bpc157',     dose: '500 mcg', cadence: '2× daily',  goal: 'Shoulder tendinitis recovery' },
-      { slug: 'tb500',      dose: '2 mg',    cadence: '1× weekly', goal: 'Connective tissue support' },
-      { slug: 'cjc1295',    dose: '1 mg',    cadence: '2× weekly', goal: 'Sleep + body comp' },
-      { slug: 'ipamorelin', dose: '200 mcg', cadence: '5× weekly', goal: 'Sleep + body comp' },
-    ],
+    cycleName: active.name || 'Current cycle',
+    startedDaysAgo: started,
+    compounds,
   };
 }
 
@@ -829,7 +867,7 @@ const state = {
   purity: '',
 };
 
-const activeStack = getActiveStack();
+let activeStack = getActiveStack();  // will be re-evaluated inside initPage() after auth
 
 /* ============================================================
  * QUESTION SELECTION — top 4 metrics by weighted vote across stack
@@ -1424,7 +1462,7 @@ function buildCardForSave(visibility) {
     id: 'user-card-' + Date.now(),
     setId: visibility === 'public' ? generateSetId(c) : 'DRAFT',
     visibility,
-    author: 'you',                  // TODO: pull real handle when wiring Supabase
+    author: (window.lms && window.lms.displayName()) || 'you',
     age: 'just now',
     likes: 0, comments: 0, saved: false, liked: false,
     savedAt: new Date().toISOString(),
@@ -1473,10 +1511,18 @@ document.getElementById('btn-draft').addEventListener('click', () => {
 /* ============================================================
  * INIT
  * ============================================================ */
-renderStackPicker();
-renderQuestions();
-renderPreview();
-updateValidation();
+// Init is gated by auth — see /app/_auth.js.
+function initPage(user, userData) {
+  // Re-read active stack now that we have the user's real stack data.
+  activeStack = getActiveStack();
+  renderStackPicker();
+  renderQuestions();
+  renderPreview();
+  updateValidation();
+  // If URL has ?edit=<id>, prefill from saved card snapshot.
+  if (typeof applyEditAndRerender === 'function') applyEditAndRerender();
+}
+window.lms.requireAuth(initPage);
 
 /* ============================================================
  * EDIT MODE — when URL has ?edit=<cardId>, look up the card in
@@ -1610,14 +1656,16 @@ persist = function(key, card) {
   originalPersist(key, card);
 };
 
-// Run the prefill once everything else is initialized.
-applyEditPrefill();
-if (editContext) {
-  // Re-render the picker/questions/preview/validation now that state is set
-  renderStackPicker();
-  renderQuestions();
-  renderPreview();
-  updateValidation();
+// Edit prefill runs inside initPage() once auth completes (so the user's
+// real stack is available for compound augmentation).
+function applyEditAndRerender() {
+  applyEditPrefill();
+  if (editContext) {
+    renderStackPicker();
+    renderQuestions();
+    renderPreview();
+    updateValidation();
+  }
 }
 </script>
 

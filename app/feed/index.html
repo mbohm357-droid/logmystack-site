@@ -15,6 +15,8 @@
   - Cards visually consistent with /app/'s design system.
 -->
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="/app/_auth.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1354,7 +1356,7 @@ function toggleCommentThread(card, btn) {
       const text = input.value.trim();
       if (!text) return;
       const list = loadComments(card.id);
-      list.push({ author: 'you', text, timestamp: new Date().toISOString() });
+      list.push({ author: (window.lms && window.lms.displayName()) || 'you', text, timestamp: new Date().toISOString() });
       saveComments(card.id, list);
       document.getElementById('comment-list-' + card.id).innerHTML = renderCommentList(card.id);
       input.value = '';
@@ -1386,8 +1388,14 @@ document.getElementById('sort-top').addEventListener('click', () => {
   render();
 });
 
-// Initial render
-render();
+// Initial render — gated by Supabase auth.
+function initPage(user, userData) {
+  if (typeof syncSavedStateFromStorage === 'function') {
+    syncSavedStateFromStorage([...USER_CARDS, ...MOCK_CARDS]);
+  }
+  render();
+}
+window.lms.requireAuth(initPage);
 </script>
 
 </body>
