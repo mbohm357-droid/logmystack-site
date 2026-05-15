@@ -1,0 +1,14 @@
+{
+  "name": "LogMyStack",
+  "short_name": "LogMyStack",
+  "description": "Structured logbook for peptide users.",
+  "start_url": "/app/",
+  "scope": "/app/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    { "src": "/app/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/app/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

@@ -514,6 +514,13 @@
   .weeks-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .weeks-input::placeholder { color: var(--muted-2); font-weight: 400; }
 </style>
+
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/app/icon.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LogMyStack">
+  <script src="/app/_nav.js" defer></script>
 </head>
 <body>
 
@@ -1669,5 +1676,13 @@ function applyEditAndRerender() {
 }
 </script>
 
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW register failed:', err));
+  });
+}
+</script>
 </body>
 </html>

@@ -200,6 +200,46 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+
+  /* P0-3 — onboarding card (shown when state.stacks is empty / mid-onboard) */
+  .onboarding-panel {
+    margin-bottom: 28px;
+    background: linear-gradient(180deg, rgba(52,211,153,0.06), rgba(52,211,153,0.01));
+    border: 1px solid rgba(52,211,153,0.20);
+    border-radius: 16px;
+    padding: 28px 28px 30px;
+  }
+  .onboarding-step-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.16em;
+    color: var(--accent); margin-bottom: 6px;
+  }
+  .onboarding-title {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.018em;
+    margin: 0 0 6px;
+  }
+  .onboarding-sub {
+    font-size: 14px; color: var(--muted); margin: 0 0 18px;
+    max-width: 560px; line-height: 1.55;
+  }
+  .onboarding-checklist {
+    display: flex; gap: 16px; margin: 20px 0 4px; flex-wrap: wrap;
+  }
+  .onboarding-step {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: var(--muted-2);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .onboarding-step.done { color: var(--accent); }
+  .onboarding-step.active { color: var(--text); }
+  .onboarding-step-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 1.5px solid currentColor;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 8.5px;
+  }
+  .onboarding-step.done .onboarding-step-dot { background: var(--accent); border-color: var(--accent); color: #052e1a; }
+
   .empty-state {
     text-align: center; padding: 60px 24px; color: var(--muted);
   }
@@ -240,6 +280,13 @@
     font-size: 11.5px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.03em;
   }
 </style>
+
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/app/icon.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LogMyStack">
+  <script src="/app/_nav.js" defer></script>
 </head>
 <body>
 
@@ -344,9 +391,9 @@
         <span class="pill-streak-dot"></span>
         <span id="streak-text">0 days</span>
       </div>
-      <button class="btn-primary" onclick="openLogDose()">
+      <button class="btn-primary" onclick="openLogDose()" id="header-log-cta">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
-        Log dose
+        <span id="header-log-cta-label">Log dose</span>
       </button>
       <div class="avatar" id="header-avatar">·</div>
     </div>
@@ -367,6 +414,9 @@
       <button class="btn-small" onclick="openCheckin()">+ Check-in</button>
     </div>
   </div>
+
+  <!-- Onboarding panel (shown during initial setup; hidden once a stack exists). -->
+  <div id="onboarding-panel" class="onboarding-panel hidden"></div>
 
   <!-- Today's metric card row (filled in if today's check-in exists) -->
   <div id="today-metric-row" class="grid md:grid-cols-4 gap-4 mb-6"></div>
@@ -508,6 +558,37 @@
     <p class="text-sm muted mb-4">Permanently delete every stack, dose, note, and check-in on your account. Export a backup first if you might want it later. This cannot be undone.</p>
     <button class="btn-danger" onclick="confirmClearAll()">Clear all data</button>
   </div>
+
+  <!-- Reminders (P2-1 client + P2-2 email opt-in) -->
+  <div class="panel p-6 mb-6">
+    <h3 class="text-base font-bold tracking-tight mb-2">Reminders</h3>
+    <p class="text-xs muted mb-5">Get a nudge when it's time to log a dose. You can change these anytime.</p>
+
+    <div class="flex items-center justify-between gap-4 py-2" style="border-bottom: 1px solid var(--border);">
+      <div>
+        <div class="text-sm font-medium">Browser push notifications</div>
+        <div class="text-xs muted-2 mt-0.5" id="push-status-line">Asks for permission on enable.</div>
+      </div>
+      <button class="btn-small" id="push-enable-btn" onclick="enablePushNotifications()">Enable</button>
+    </div>
+
+    <div class="flex items-center justify-between gap-4 py-2" style="border-bottom: 1px solid var(--border);">
+      <div>
+        <div class="text-sm font-medium">Email reminders</div>
+        <div class="text-xs muted-2 mt-0.5">Daily reminder to log + Sunday weekly digest.</div>
+      </div>
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" id="email-reminders-toggle" onchange="toggleEmailReminders(this.checked)" style="accent-color: var(--accent); width: 16px; height: 16px;">
+        <span class="text-xs mono uppercase tracking-widest" id="email-reminders-state" style="color: var(--muted-2);">Off</span>
+      </label>
+    </div>
+
+    <div class="py-3">
+      <label class="block text-xs mono uppercase muted mb-2" style="letter-spacing: 0.06em;">Reminder time</label>
+      <input type="time" class="input-field" id="reminder-time" onchange="saveReminderTime(this.value)" value="08:00" style="max-width: 180px;">
+    </div>
+  </div>
+
 </main>
 
 <!-- Modals -->
@@ -697,6 +778,11 @@ const SUPABASE_URL = 'https://axnlmmxkydsrqrshlenz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XS1xdqyGTMq8uf5GrrEYaQ_YRnD6_XE';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// VAPID public key for web push subscriptions. Replace with the key you
+// generate via `npx web-push generate-vapid-keys` (see SERVER-SETUP.md).
+// Leave blank to disable push subscription entirely (email reminders still work).
+const VAPID_PUBLIC_KEY = '';
+
 function defaultState() {
   return {
     stacks: [],
@@ -710,6 +796,17 @@ let state = defaultState();
 let currentUser = null;
 let saveQueued = false;
 let savePending = false;
+
+function maybeSeedTimezone() {
+  // Capture the user's IANA timezone on first load so the server-side
+  // reminder cron knows when "their" 8 AM is.
+  if (!state.reminderPrefs) state.reminderPrefs = {};
+  if (!state.reminderPrefs.timezone) {
+    try {
+      state.reminderPrefs.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    } catch { state.reminderPrefs.timezone = 'UTC'; }
+  }
+}
 
 async function loadStateFromDb() {
   if (!currentUser) return;
@@ -832,17 +929,20 @@ function renderToday() {
   const now = new Date();
   const hour = now.getHours();
   const name = userDisplayName();
-  const greeting = (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + (name ? ', ' + name : '');
+  const base = hour < 4 ? 'Up late' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : hour < 22 ? 'Good evening' : 'Up late';
+  const greeting = base + (name ? ', ' + name : '');
   document.getElementById('today-greeting').textContent = greeting;
   document.getElementById('today-date-line').textContent = fmtDateLong(now.toISOString());
 
   // Streak
   const streak = calcStreak();
+  document.getElementById('header-streak').style.display = 'inline-flex';
   if (streak > 0) {
-    document.getElementById('header-streak').style.display = 'inline-flex';
     document.getElementById('streak-text').innerHTML = `STREAK · <strong style="color: var(--text); font-weight: 600;">${streak} day${streak===1?'':'s'}</strong>`;
+    document.getElementById('header-streak').title = `You've logged ${streak} day${streak===1?'':'s'} in a row.`;
   } else {
-    document.getElementById('header-streak').style.display = 'none';
+    document.getElementById('streak-text').innerHTML = `STREAK · <strong style="color: var(--muted-2); font-weight: 600;">0 days</strong>`;
+    document.getElementById('header-streak').title = 'Log something today to start your streak.';
   }
 
   const stack = activeStack();
@@ -862,6 +962,99 @@ function renderToday() {
   renderTodayStack();
   renderCheckinPanel();
   renderTodayNotes();
+  updateLogDoseCta();
+  renderOnboardingPanel();
+}
+
+
+function gateEmptyTodayChrome(hideAll) {
+  // P1-2 — when no stack/compounds, hide secondary CTAs and panels.
+  const ids = ['today-protocol-panel'];
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('hidden', hideAll); });
+  const rightCol = document.querySelector('#tab-today .grid.lg\\:grid-cols-3 > div:nth-child(2)');
+  if (rightCol) rightCol.classList.toggle('hidden', hideAll);
+  // Hide Current Stack panel (second panel in the left column)
+  const leftCol = document.querySelector('#tab-today .lg\\:col-span-2');
+  if (leftCol) {
+    const panels = leftCol.querySelectorAll(':scope > .panel');
+    panels.forEach((p, i) => { if (i >= 1) p.classList.toggle('hidden', hideAll); });
+  }
+  // Hide +Note / +Check-in header buttons
+  const headerBtnRow = document.querySelector('#tab-today .flex.items-start.justify-between .flex.items-center.gap-3');
+  if (headerBtnRow) headerBtnRow.classList.toggle('hidden', hideAll);
+}
+
+function renderOnboardingPanel() {
+  // P0-3 — multi-step onboarding card replacing the empty Today.
+  const panel = document.getElementById('onboarding-panel');
+  if (!panel) return;
+  const noStack    = state.stacks.length === 0;
+  const stack      = activeStack();
+  const noCompound = !!stack && (!stack.compounds || stack.compounds.length === 0);
+  const noDose     = !!stack && stack.compounds && stack.compounds.length > 0 && state.doses.length === 0;
+
+  if (!noStack && !noCompound && !noDose) {
+    panel.classList.add('hidden');
+    gateEmptyTodayChrome(false);
+    return;
+  }
+  gateEmptyTodayChrome(true);
+  panel.classList.remove('hidden');
+
+  const step = noStack ? 1 : noCompound ? 2 : 3;
+  const totalSteps = 3;
+  const checklist = `
+    <div class="onboarding-checklist">
+      <div class="onboarding-step ${step === 1 ? 'active' : 'done'}"><span class="onboarding-step-dot">${step > 1 ? '✓' : '1'}</span>Create a stack</div>
+      <div class="onboarding-step ${step === 2 ? 'active' : step > 2 ? 'done' : ''}"><span class="onboarding-step-dot">${step > 2 ? '✓' : '2'}</span>Add compounds</div>
+      <div class="onboarding-step ${step === 3 ? 'active' : ''}"><span class="onboarding-step-dot">3</span>Log your first dose</div>
+    </div>`;
+
+  let body = '';
+  if (step === 1) {
+    body = `
+      <div class="onboarding-step-label">Step ${step} of ${totalSteps}</div>
+      <h2 class="onboarding-title">Create your first stack.</h2>
+      <p class="onboarding-sub">A <strong style="color: var(--text);">stack</strong> is the protocol you're running — its name, intended duration, and what you want out of it. You can edit anything later.</p>
+      <button class="btn-primary" onclick="openNewStack()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        New stack
+      </button>
+      ${checklist}
+    `;
+  } else if (step === 2) {
+    const stackName = stack && stack.name ? `<strong style="color: var(--text);">${escapeHtml(stack.name)}</strong>` : 'your stack';
+    body = `
+      <div class="onboarding-step-label">Step ${step} of ${totalSteps}</div>
+      <h2 class="onboarding-title">Add compounds to ${stackName}.</h2>
+      <p class="onboarding-sub">Tell us what you're running. Each compound needs a name (e.g. <span class="mono">BPC-157</span>), a dose, and a frequency. Add as many as you need.</p>
+      <button class="btn-primary" onclick="openAddCompound('${stack.id}')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        Add compound
+      </button>
+      ${checklist}
+    `;
+  } else if (step === 3) {
+    body = `
+      <div class="onboarding-step-label">Step ${step} of ${totalSteps}</div>
+      <h2 class="onboarding-title">Log your first dose.</h2>
+      <p class="onboarding-sub">You're set up. Hit <strong style="color: var(--text);">Log dose</strong> below (or in the header) to log your first one — your streak starts today.</p>
+      <button class="btn-primary" onclick="openLogDose()">
+        Log dose
+      </button>
+      ${checklist}
+    `;
+  }
+  panel.innerHTML = body;
+}
+
+function updateLogDoseCta() {
+  const label = document.getElementById('header-log-cta-label');
+  if (!label) return;
+  if (state.stacks.length === 0) { label.textContent = 'Start a stack'; return; }
+  const s = activeStack();
+  if (!s || !s.compounds || s.compounds.length === 0) { label.textContent = 'Add compound'; return; }
+  label.textContent = 'Log dose';
 }
 
 function renderTodayMetrics() {
@@ -1265,10 +1458,133 @@ function chartCard(label, key, unit, data) {
 }
 
 // ============== SETTINGS TAB ==============
+
+// ============== P2-1 + P2-2 — REMINDERS ==============
+function reminderPrefs() {
+  if (!state.reminderPrefs) state.reminderPrefs = { email: false, pushSubscribed: false, time: '08:00' };
+  return state.reminderPrefs;
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+async function subscribeToPush() {
+  if (!VAPID_PUBLIC_KEY) {
+    console.warn('VAPID_PUBLIC_KEY not set — skipping push subscription.');
+    return null;
+  }
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+    reminderPrefs().pushSubscription = sub.toJSON();
+    reminderPrefs().pushSubscribed = true;
+    await saveState();
+    return sub;
+  } catch (e) {
+    console.error('Push subscribe failed:', e);
+    reminderPrefs().pushSubscribed = false;
+    await saveState();
+    return null;
+  }
+}
+
+async function enablePushNotifications() {
+  if (!('Notification' in window)) {
+    toast('This browser does not support notifications.');
+    return;
+  }
+  const btn = document.getElementById('push-enable-btn');
+  const status = document.getElementById('push-status-line');
+  btn.disabled = true; btn.textContent = 'Requesting…';
+  let perm = Notification.permission;
+  if (perm === 'default') {
+    perm = await Notification.requestPermission();
+  }
+  btn.disabled = false;
+  if (perm === 'granted') {
+    // Subscribe to PushManager and persist the subscription endpoint so the
+    // server-side cron can send pushes to this browser.
+    await subscribeToPush();
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      reg.showNotification('LogMyStack reminders on', {
+        body: "We'll nudge you at your reminder time.",
+        icon: '/app/icon.svg',
+      });
+    } catch (e) { new Notification('LogMyStack reminders on'); }
+    btn.textContent = 'On';
+    btn.classList.add('hidden');
+    status.textContent = reminderPrefs().pushSubscription
+      ? 'Browser push enabled.'
+      : 'Local notifications enabled. (Set VAPID_PUBLIC_KEY for cross-device push.)';
+  } else if (perm === 'denied') {
+    status.textContent = "Denied. You can enable notifications in browser settings.";
+    btn.textContent = 'Enable';
+  } else {
+    btn.textContent = 'Enable';
+  }
+}
+
+function toggleEmailReminders(checked) {
+  reminderPrefs().email = !!checked;
+  document.getElementById('email-reminders-state').textContent = checked ? 'On' : 'Off';
+  document.getElementById('email-reminders-state').style.color = checked ? 'var(--accent)' : 'var(--muted-2)';
+  saveState();
+  toast(checked ? 'Email reminders on' : 'Email reminders off');
+}
+
+function saveReminderTime(value) {
+  reminderPrefs().time = value || '08:00';
+  saveState();
+}
+
+function renderRemindersSettings() {
+  const prefs = reminderPrefs();
+  const emailToggle = document.getElementById('email-reminders-toggle');
+  const emailState = document.getElementById('email-reminders-state');
+  const timeInput = document.getElementById('reminder-time');
+  if (emailToggle) emailToggle.checked = !!prefs.email;
+  if (emailState) {
+    emailState.textContent = prefs.email ? 'On' : 'Off';
+    emailState.style.color = prefs.email ? 'var(--accent)' : 'var(--muted-2)';
+  }
+  if (timeInput) timeInput.value = prefs.time || '08:00';
+  // Push button state
+  const btn = document.getElementById('push-enable-btn');
+  const status = document.getElementById('push-status-line');
+  if (btn && status) {
+    if (!('Notification' in window)) {
+      btn.classList.add('hidden');
+      status.textContent = 'Not supported in this browser.';
+    } else if (Notification.permission === 'granted') {
+      btn.classList.add('hidden');
+      status.textContent = 'Browser notifications enabled.';
+    } else if (Notification.permission === 'denied') {
+      btn.disabled = true;
+      btn.textContent = 'Blocked';
+      status.textContent = 'Blocked — change in browser settings.';
+    }
+  }
+}
+
 function renderSettings() {
   document.getElementById('account-email').textContent = currentUser?.email || '—';
   const nameInput = document.getElementById('settings-display-name');
   if (nameInput) nameInput.value = state.displayName || '';
+  renderRemindersSettings();
 }
 function saveDisplayName() {
   const v = (document.getElementById('settings-display-name').value || '').trim();
@@ -1387,8 +1703,9 @@ function openLogDose(preselectId) {
   const select = document.getElementById('log-compound');
   const stack = activeStack();
   if (!stack || !stack.compounds || stack.compounds.length === 0) {
-    toast('Add a compound to your stack first');
-    return;
+    if (state.stacks.length === 0) { openNewStack(); return; }
+    if (stack) { openAddCompound(stack.id); return; }
+    openAddCompound(state.stacks[0].id); return;
   }
   select.innerHTML = stack.compounds.map(c =>
     `<option value="${c.id}" ${c.id === preselectId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
@@ -1483,6 +1800,7 @@ function submitNewStack() {
   } else {
     const newStack = { id: uid(), ...data, compounds: [] };
     state.stacks.push(newStack);
+    track('stack_created');
     if (!state.activeStackId) state.activeStackId = newStack.id;
   }
   saveState();
@@ -1553,6 +1871,7 @@ function submitAddCompound() {
     Object.assign(c, data);
   } else {
     s.compounds.push({ id: uid(), ...data });
+    track('compound_added', { tag: data.tag });
   }
   saveState();
   closeModal();
@@ -1716,6 +2035,7 @@ async function init() {
   if (session) {
     currentUser = session.user;
     await loadStateFromDb();
+    maybeSeedTimezone();
     hideAuthGate();
     updateAvatarAndChrome();
     renderToday();
@@ -1731,6 +2051,7 @@ async function init() {
       currentUser = session.user;
       showAuthLoading();
       await loadStateFromDb();
+      maybeSeedTimezone();
       hideAuthGate();
       updateAvatarAndChrome();
       renderToday();
@@ -1747,5 +2068,13 @@ async function init() {
 init();
 </script>
 
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW register failed:', err));
+  });
+}
+</script>
 </body>
 </html>
