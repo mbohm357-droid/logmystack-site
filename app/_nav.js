@@ -1,11 +1,13 @@
-/* LogMyStack — shared mobile nav drawer.
+/* LogMyStack — shared mobile nav + avatar menu.
  *
  * Loaded by /app/, /app/feed/, /app/create/, /app/saved/, /app/my/.
- * On viewports ≤ 768px, hides the inline header nav and shows a
- * hamburger button. Tapping the hamburger opens a right-side drawer
- * with the full nav list. The drawer reuses the existing tab handlers
- * for /app/'s in-page tab buttons, and uses real <a href> nav for the
- * other surfaces.
+ *
+ *  • On viewports ≤ 768px hides the inline header nav and shows a
+ *    hamburger in the TOP-LEFT of the header. Tap opens a right-side
+ *    drawer with all nav items.
+ *  • Enhances the existing .avatar in the header — wraps it so click
+ *    opens a small menu (email · Settings · Sign out). Visible on every
+ *    page, every breakpoint.
  */
 (function () {
   const NAV_ITEMS = [
@@ -43,6 +45,8 @@
         background: transparent; border: 1px solid var(--border, #262626);
         color: var(--text, #fafafa); border-radius: 9px; cursor: pointer;
         padding: 0; transition: all 0.15s;
+        margin-right: 10px;
+        flex-shrink: 0;
       }
       .lms-hamburger:hover { background: var(--panel-2, #161616); border-color: #333; }
       @media (max-width: 768px) {
@@ -96,17 +100,70 @@
       .lms-drawer-link.active {
         background: rgba(52,211,153,0.08); color: var(--accent, #34d399);
       }
+
+      /* Force the avatar to be a real circle even inside a flex container */
+      .avatar {
+        flex-shrink: 0;
+        aspect-ratio: 1 / 1;
+        min-width: 30px;
+        min-height: 30px;
+        cursor: pointer;
+        transition: transform 0.12s;
+      }
+      .avatar:hover { transform: scale(1.05); }
+
+      /* Avatar dropdown menu */
+      .lms-avatar-wrap { position: relative; flex-shrink: 0; }
+      .lms-avatar-menu {
+        position: absolute; top: calc(100% + 8px); right: 0;
+        background: var(--panel, #111);
+        border: 1px solid var(--border, #262626);
+        border-radius: 10px;
+        padding: 6px;
+        min-width: 220px;
+        box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+        z-index: 80;
+        opacity: 0; pointer-events: none; transform: translateY(-4px);
+        transition: opacity 0.15s, transform 0.15s;
+      }
+      .lms-avatar-menu.open {
+        opacity: 1; pointer-events: all; transform: translateY(0);
+      }
+      .lms-avatar-menu-email {
+        padding: 9px 10px 10px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px; color: var(--muted-2, #737373);
+        border-bottom: 1px solid var(--border-2, #1f1f1f);
+        margin-bottom: 4px;
+        word-break: break-all;
+      }
+      .lms-avatar-menu-item {
+        display: flex; align-items: center; gap: 9px;
+        padding: 9px 12px;
+        font-size: 13.5px; color: var(--text, #fafafa);
+        background: transparent; border: none; cursor: pointer;
+        border-radius: 7px; text-decoration: none;
+        width: 100%; text-align: left;
+        font-family: 'Inter', sans-serif;
+        transition: background 0.12s;
+      }
+      .lms-avatar-menu-item:hover { background: var(--panel-2, #161616); }
+      .lms-avatar-menu-item.danger { color: var(--danger, #f87171); }
+      .lms-avatar-menu-item.danger:hover { background: rgba(248,113,113,0.08); }
+      .lms-avatar-menu-item svg { width: 15px; height: 15px; opacity: 0.7; flex-shrink: 0; }
     `;
     document.head.appendChild(style);
   }
 
+  // ---------------- Hamburger (TOP-LEFT) ----------------
   function injectHamburger() {
     if (document.querySelector('.lms-hamburger')) return;
     const header = document.querySelector('header');
     if (!header) return;
-    // Find the right-side container in the header (second flex group)
-    const rightSide = header.querySelector('.flex.items-center.gap-3, .flex.items-center.gap-2');
-    if (!rightSide) return;
+    // The header's outer flex row holds the LEFT group first and RIGHT group second.
+    // We want the hamburger as the FIRST child of the left group (before the logo).
+    const leftGroup = header.querySelector('.flex.items-center.gap-8');
+    if (!leftGroup) return;
     const btn = document.createElement('button');
     btn.className = 'lms-hamburger';
     btn.setAttribute('aria-label', 'Menu');
@@ -117,7 +174,7 @@
         <line x1="3" y1="18" x2="21" y2="18"/>
       </svg>`;
     btn.addEventListener('click', openDrawer);
-    rightSide.appendChild(btn);
+    leftGroup.insertBefore(btn, leftGroup.firstChild);
   }
 
   function injectDrawer() {
@@ -157,12 +214,9 @@
     NAV_ITEMS.forEach(item => {
       const itemHref = item.href || '/app/';
       const isCurrentSurface = (currentHref === itemHref);
-      const isAppPage = (itemHref === '/app/');
-      // On /app/, "page"-keyed items toggle in-page tabs; otherwise they navigate.
-      // On non-/app/ surfaces, all items navigate normally.
       const el = (onAppHome && item.page)
         ? Object.assign(document.createElement('button'), {
-            className: 'lms-drawer-link' + (isCurrentSurface && (typeof window.activeTab === 'string' ? window.activeTab === item.page : false) ? ' active' : ''),
+            className: 'lms-drawer-link' + (isCurrentSurface ? '' : ''),
             type: 'button',
           })
         : Object.assign(document.createElement('a'), {
@@ -191,10 +245,82 @@
     document.getElementById('lms-drawer').classList.remove('open');
   }
 
+  // ---------------- Avatar menu ----------------
+  function enhanceAvatar() {
+    const avatar = document.getElementById('header-avatar');
+    if (!avatar) return;
+    if (avatar.dataset.lmsEnhanced === '1') return;
+    avatar.dataset.lmsEnhanced = '1';
+
+    // Wrap the avatar so we can absolutely-position the menu next to it
+    const wrap = document.createElement('div');
+    wrap.className = 'lms-avatar-wrap';
+    avatar.parentNode.insertBefore(wrap, avatar);
+    wrap.appendChild(avatar);
+
+    // Menu
+    const menu = document.createElement('div');
+    menu.className = 'lms-avatar-menu';
+    menu.innerHTML = `
+      <div class="lms-avatar-menu-email" id="lms-avatar-menu-email">—</div>
+      <button class="lms-avatar-menu-item" id="lms-avatar-menu-settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </button>
+      <button class="lms-avatar-menu-item danger" id="lms-avatar-menu-signout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign out
+      </button>
+    `;
+    wrap.appendChild(menu);
+
+    // Show email
+    function setEmail() {
+      const email = (window.currentUser && window.currentUser.email)
+                 || (window.lms && window.lms.currentUser && window.lms.currentUser.email)
+                 || '';
+      const node = document.getElementById('lms-avatar-menu-email');
+      if (node) node.textContent = email || '—';
+    }
+    setEmail();
+    // Re-check email after a small delay (auth might still be hydrating)
+    setTimeout(setEmail, 700);
+    setTimeout(setEmail, 2000);
+
+    // Toggle
+    avatar.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      setEmail();
+      menu.classList.toggle('open');
+    });
+    document.addEventListener('click', (ev) => {
+      if (!ev.target.closest('.lms-avatar-wrap')) menu.classList.remove('open');
+    });
+
+    // Settings: switchTab on /app/, navigate on others
+    document.getElementById('lms-avatar-menu-settings').addEventListener('click', (ev) => {
+      ev.preventDefault();
+      menu.classList.remove('open');
+      if (isAppHome() && typeof window.switchTab === 'function') {
+        window.switchTab('settings');
+      } else {
+        location.href = '/app/?tab=settings';
+      }
+    });
+
+    // Sign out
+    document.getElementById('lms-avatar-menu-signout').addEventListener('click', () => {
+      menu.classList.remove('open');
+      if (typeof window.signOut === 'function') window.signOut();
+      else if (window.lms && window.lms.signOut) window.lms.signOut();
+    });
+  }
+
   function init() {
     injectStyles();
     injectHamburger();
     injectDrawer();
+    enhanceAvatar();
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
