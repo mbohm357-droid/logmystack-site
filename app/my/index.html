@@ -859,7 +859,7 @@ function renderConstellation(compounds, currentWeek) {
 
   // Glyph slots — each glyph is rendered in its own inner SVG positioned at (x,y).
   // We use foreignObject-free approach: nest <svg> with width/height in user units.
-  const glyphSize = n >= 3 ? 30 : 36;
+  const glyphSize = n >= 3 ? 38 : 46;
   const half = glyphSize / 2;
   const glyphsHtml = compounds.slice(0, n).map((c, i) => {
     const meta = COMPOUND[c.slug];
@@ -883,24 +883,24 @@ function renderConstellation(compounds, currentWeek) {
       } else {
         badgeText = 'W' + startedWeek + '–' + stoppedWeek; badgeBg = '#fbbf24';
       }
-      const bAnchorX = layout[i].x + half - 1;
-      const bAnchorY = layout[i].y - half + 0.5;
-      const bW = badgeText.length * 2.2 + 3;
-      badgeHtml = `<g pointer-events="none"><rect x="${bAnchorX - bW}" y="${bAnchorY}" width="${bW}" height="5" rx="1.4" fill="${badgeBg}" stroke="#0a0a0a" stroke-width="0.35"/><text x="${bAnchorX - bW/2}" y="${bAnchorY + 3.6}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="2.9" font-weight="700" fill="#0a0a0a">${badgeText}</text></g>`;
+      const bAnchorX = layout[i].x + half + 0.5;
+      const bAnchorY = layout[i].y - half - 1.5;
+      const bW = badgeText.length * 2.8 + 4;
+      badgeHtml = `<g pointer-events="none"><rect x="${bAnchorX - bW}" y="${bAnchorY}" width="${bW}" height="6.5" rx="1.6" fill="${badgeBg}" stroke="#0a0a0a" stroke-width="0.4"/><text x="${bAnchorX - bW/2}" y="${bAnchorY + 4.7}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="3.7" font-weight="700" fill="#0a0a0a">${badgeText}</text></g>`;
     }
     // Two-line hover tooltip: compound name + weeks-used
     const tipName = meta ? meta.display : '';
     const tipWeeks = weeksUsed === 1 ? '1 wk used' : weeksUsed + ' wks used';
-    const tipW = Math.max(Math.max(tipName.length, tipWeeks.length) * 2.4 + 6, 16);
+    const tipW = Math.max(Math.max(tipName.length, tipWeeks.length) * 3 + 7, 20);
     const tipX = layout[i].x - tipW / 2;
     const tipY = layout[i].y + half + 6;
     return `<g class="glyph-group">
       <rect x="${px}" y="${py}" width="${glyphSize}" height="${glyphSize}" fill="transparent" pointer-events="all"/>
       <svg x="${px}" y="${py}" width="${glyphSize}" height="${glyphSize}" viewBox="0 0 100 100" style="color: ${color}; overflow: visible; pointer-events: none;">${inner}</svg>
       ${badgeHtml}
-      <rect class="glyph-label-bg" x="${tipX}" y="${tipY - 1}" width="${tipW}" height="9.6" rx="2" fill="#0a0a0a" stroke="${color}" stroke-width="0.35"/>
-      <text class="glyph-label" x="${layout[i].x}" y="${tipY + 3}" text-anchor="middle" fill="${color}" font-family="JetBrains Mono, monospace" font-size="3.6" font-weight="600">${tipName}</text>
-      <text class="glyph-label" x="${layout[i].x}" y="${tipY + 7.6}" text-anchor="middle" fill="#a3a3a3" font-family="JetBrains Mono, monospace" font-size="3" opacity="0.85">${tipWeeks}</text>
+      <rect class="glyph-label-bg" x="${tipX}" y="${tipY - 1}" width="${tipW}" height="12" rx="2" fill="#0a0a0a" stroke="${color}" stroke-width="0.4"/>
+      <text class="glyph-label" x="${layout[i].x}" y="${tipY + 4}" text-anchor="middle" fill="${color}" font-family="JetBrains Mono, monospace" font-size="4.8" font-weight="600">${tipName}</text>
+      <text class="glyph-label" x="${layout[i].x}" y="${tipY + 9.4}" text-anchor="middle" fill="#a3a3a3" font-family="JetBrains Mono, monospace" font-size="3.9" opacity="0.85">${tipWeeks}</text>
     </g>`;
   }).join('');
 
