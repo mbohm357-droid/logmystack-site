@@ -68,6 +68,14 @@
     display: inline-flex; align-items: center; gap: 6px;
   }
   .btn-primary:hover { opacity: 0.9; }
+  /* Header CTA — slightly tighter on desktop, icon-only on mobile so the
+     header doesn't feel dominated by one giant green button. */
+  #header-log-cta { padding: 8px 14px; font-size: 12.5px; }
+  @media (max-width: 700px) {
+    #header-log-cta { padding: 9px 11px; gap: 0; }
+    #header-log-cta svg { width: 14px; height: 14px; }
+    #header-log-cta-label { display: none; }
+  }
   .btn-small {
     background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
     font-weight: 500; padding: 6px 12px; border-radius: 7px;
@@ -201,6 +209,63 @@
   }
 
 
+
+
+
+  /* Compliance heatmap — GitHub-contribution-style grid (13w × 7d). */
+  .heatmap-wrap { display: flex; align-items: flex-start; gap: 10px; }
+  .heatmap-day-labels {
+    display: grid; grid-template-rows: repeat(7, 14px); gap: 3px;
+    font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+    color: var(--muted-2); padding-top: 1px;
+  }
+  .heatmap-grid {
+    display: grid; grid-template-columns: repeat(13, 14px);
+    grid-auto-flow: column; gap: 3px;
+  }
+  .heatmap-cell {
+    width: 14px; height: 14px; border-radius: 3px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    transition: transform 0.1s;
+  }
+  .heatmap-cell.hide { background: transparent; border: none; }
+  .heatmap-cell.l1 { background: rgba(52,211,153,0.20); border-color: rgba(52,211,153,0.30); }
+  .heatmap-cell.l2 { background: rgba(52,211,153,0.45); border-color: rgba(52,211,153,0.55); }
+  .heatmap-cell.l3 { background: rgba(52,211,153,0.72); border-color: rgba(52,211,153,0.82); }
+  .heatmap-cell.l4 { background: rgba(52,211,153,0.96); border-color: rgba(52,211,153,1.00); }
+  .heatmap-cell:hover { transform: scale(1.35); cursor: pointer; }
+  .heatmap-legend {
+    display: flex; align-items: center; gap: 8px; margin-top: 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    color: var(--muted-2); letter-spacing: 0.04em;
+  }
+  .heatmap-legend-cells { display: flex; gap: 3px; }
+  .heatmap-legend-cells .heatmap-cell { width: 11px; height: 11px; border-radius: 2px; }
+
+  /* Cycle progress bar (under Today greeting when active stack has duration). */
+  .cycle-progress {
+    margin-top: 14px;
+    max-width: 420px;
+  }
+  .cycle-progress-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--text);
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .cycle-progress-label .pct { color: var(--muted-2); font-weight: 400; }
+  .cycle-progress-bar {
+    height: 6px; background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 999px; overflow: hidden;
+  }
+  .cycle-progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #6ee7b7);
+    border-radius: 999px;
+    transition: width 0.35s ease;
+  }
 
   /* Today greeting streak chip — bigger + more visible than the header pill */
   .today-streak-chip {
@@ -455,6 +520,15 @@
           <div class="today-streak-chip-label" id="today-streak-label">Log today to start your streak</div>
         </div>
       </div>
+      <div class="cycle-progress" id="cycle-progress" style="display: none;">
+        <div class="cycle-progress-label">
+          <strong id="cycle-progress-week">Week 1 of 12</strong>
+          <span class="pct" id="cycle-progress-pct">0% complete</span>
+        </div>
+        <div class="cycle-progress-bar">
+          <div class="cycle-progress-bar-fill" id="cycle-progress-fill" style="width: 0%;"></div>
+        </div>
+      </div>
     </div>
     <div class="flex items-center gap-3">
       <button class="btn-small" onclick="openAddNote()">+ Note</button>
@@ -544,6 +618,33 @@
       </select>
     </div>
   </div>
+  <!-- Compliance heatmap (P2 feature) -->
+  <div class="panel p-6 mb-6">
+    <div class="flex items-start justify-between mb-2 flex-wrap gap-3">
+      <div>
+        <h2 class="text-base font-bold tracking-tight">Compliance</h2>
+        <p class="text-xs muted mt-1">Last 13 weeks. Each square is one day — brighter = more logged.</p>
+      </div>
+    </div>
+    <div class="heatmap-wrap mt-4">
+      <div class="heatmap-day-labels">
+        <div>Sun</div><div></div><div>Tue</div><div></div><div>Thu</div><div></div><div>Sat</div>
+      </div>
+      <div class="heatmap-grid" id="heatmap-grid"></div>
+    </div>
+    <div class="heatmap-legend">
+      <span>Less</span>
+      <div class="heatmap-legend-cells">
+        <div class="heatmap-cell"></div>
+        <div class="heatmap-cell l1"></div>
+        <div class="heatmap-cell l2"></div>
+        <div class="heatmap-cell l3"></div>
+        <div class="heatmap-cell l4"></div>
+      </div>
+      <span>More</span>
+    </div>
+  </div>
+
   <div class="panel p-6">
     <div id="history-list"></div>
   </div>
@@ -828,7 +929,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // VAPID public key for web push subscriptions. Replace with the key you
 // generate via `npx web-push generate-vapid-keys` (see SERVER-SETUP.md).
 // Leave blank to disable push subscription entirely (email reminders still work).
-const VAPID_PUBLIC_KEY = '';
+const VAPID_PUBLIC_KEY = 'BOOWqjXf7jESlrDrVGlEsAbMh7GZbfEap8bvFM9pWvC0jV212hTW1gkLtDJTuG-NIjUWFS1SFTqDP1WiWunVXbM';
 
 function defaultState() {
   return {
@@ -1022,14 +1123,17 @@ function renderToday() {
   renderCheckinPanel();
   renderTodayNotes();
   updateLogDoseCta();
+  renderCycleProgress();
   renderOnboardingPanel();
 }
 
 
 function gateEmptyTodayChrome(hideAll) {
-  // Also hide the streak chip during onboarding (it's not helpful pre-stack).
+  // Also hide the streak chip + cycle progress during onboarding.
   const chip = document.getElementById('today-streak-chip');
   if (chip) chip.classList.toggle('hidden', hideAll);
+  const cyc = document.getElementById('cycle-progress');
+  if (cyc) cyc.classList.toggle('hidden', hideAll);
   // P1-2 — when no stack/compounds, hide secondary CTAs and panels.
   const ids = ['today-protocol-panel'];
   ids.forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('hidden', hideAll); });
@@ -1117,6 +1221,24 @@ function updateLogDoseCta() {
   const s = activeStack();
   if (!s || !s.compounds || s.compounds.length === 0) { label.textContent = 'Add compound'; return; }
   label.textContent = 'Log dose';
+}
+
+
+function renderCycleProgress() {
+  const elem = document.getElementById('cycle-progress');
+  if (!elem) return;
+  const stack = activeStack();
+  if (!stack || !stack.duration) { elem.style.display = 'none'; return; }
+  const totalDays = parseInt(stack.duration, 10);
+  if (!Number.isFinite(totalDays) || totalDays <= 0) { elem.style.display = 'none'; return; }
+  const currentDay = Math.min(dayOfStack(stack), totalDays);
+  const currentWeek = Math.max(1, Math.ceil(currentDay / 7));
+  const totalWeeks = Math.max(1, Math.ceil(totalDays / 7));
+  const pct = Math.min(100, Math.max(0, Math.round((currentDay / totalDays) * 100)));
+  elem.style.display = 'block';
+  document.getElementById('cycle-progress-week').textContent = `Week ${currentWeek} of ${totalWeeks}`;
+  document.getElementById('cycle-progress-pct').textContent = `${pct}% complete`;
+  document.getElementById('cycle-progress-fill').style.width = pct + '%';
 }
 
 function renderTodayMetrics() {
@@ -1409,7 +1531,66 @@ function confirmDeleteCompound(stackId, compoundId) {
 }
 
 // ============== HISTORY TAB ==============
+
+function renderHeatmap() {
+  const grid = document.getElementById('heatmap-grid');
+  if (!grid) return;
+  // Per-day event count
+  const counts = {};
+  function addEvents(arr) {
+    (arr || []).forEach(e => {
+      const day = ((e.timestamp || e.date || '') + '').slice(0, 10);
+      if (day) counts[day] = (counts[day] || 0) + 1;
+    });
+  }
+  addEvents(state.doses);
+  addEvents(state.notes);
+  addEvents(state.checkins);
+
+  // Build 13 weeks × 7 days, columns = weeks (oldest left), rows = Sun..Sat
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  // Find the most-recent Saturday (end of current week if Sunday-start)
+  const todayIdx = today.getDay(); // 0 = Sun .. 6 = Sat
+  const cells = [];
+  // Walk back 13 weeks: 13 columns × 7 rows.
+  // Each column is one week; the rightmost column contains the current week.
+  for (let week = 12; week >= 0; week--) {
+    for (let dow = 0; dow < 7; dow++) {  // 0 = Sun
+      // Anchor date for this cell:
+      const offsetFromToday = (week * 7) + (todayIdx - dow);
+      const date = new Date(today);
+      date.setDate(today.getDate() - offsetFromToday);
+      if (date > today) { cells.push({ hide: true }); continue; }
+      const iso = date.toISOString().slice(0, 10);
+      const c = counts[iso] || 0;
+      let level = 0;
+      if (c === 1) level = 1;
+      else if (c >= 2 && c <= 3) level = 2;
+      else if (c >= 4 && c <= 5) level = 3;
+      else if (c >= 6) level = 4;
+      cells.push({ iso, count: c, level });
+    }
+  }
+
+  // Grid is column-flow so we render in (week, dow) order
+  grid.innerHTML = cells.map(cell => {
+    if (cell.hide) return `<div class="heatmap-cell hide"></div>`;
+    const cls = cell.level > 0 ? ` l${cell.level}` : '';
+    const tip = `${formatDateShort(cell.iso)} · ${cell.count} event${cell.count===1?'':'s'}`;
+    return `<div class="heatmap-cell${cls}" title="${tip}"></div>`;
+  }).join('');
+}
+
+function formatDateShort(iso) {
+  try {
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } catch { return iso; }
+}
+
 function renderHistory() {
+  renderHeatmap();
   const filter = document.getElementById('history-filter').value;
   const events = [];
   if (filter === 'all' || filter === 'dose') {

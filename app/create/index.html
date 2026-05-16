@@ -20,6 +20,7 @@
 -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
 <script src="/app/_auth.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -648,6 +649,10 @@
     <aside class="preview-col">
       <div class="preview-label">Live preview</div>
       <div id="preview-mount"></div>
+      <button id="preview-download-btn" class="btn-secondary" style="margin-top: 14px; width: 100%; justify-content: center;" onclick="downloadPreviewAsPng()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download as image
+      </button>
       <div class="preview-help">
         The card updates as you fill in the form. This is what goes to the feed when you post.
       </div>
@@ -1500,6 +1505,36 @@ function showToast(text) {
   document.getElementById('toast-msg').textContent = text;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+
+async function downloadPreviewAsPng() {
+  const btn = document.getElementById('preview-download-btn');
+  if (!btn || !window.htmlToImage) return;
+  const mount = document.getElementById('preview-mount');
+  const cardEl = mount ? mount.querySelector('.card') : null;
+  if (!cardEl) { showToast('Pick a compound first'); return; }
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'Generating image…';
+  try {
+    const dataUrl = await window.htmlToImage.toPng(cardEl, {
+      pixelRatio: 2,
+      backgroundColor: '#0a0a0a',
+      cacheBust: true,
+    });
+    const link = document.createElement('a');
+    const title = (state.title || 'untitled').replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 40);
+    link.download = `logmystack-${title}.png`;
+    link.href = dataUrl;
+    link.click();
+    showToast('Image downloaded');
+  } catch (e) {
+    console.error('PNG export failed:', e);
+    showToast('Export failed — see console');
+  } finally {
+    btn.innerHTML = orig; btn.disabled = false;
+  }
 }
 
 document.getElementById('btn-post').addEventListener('click', () => {

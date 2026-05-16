@@ -16,6 +16,7 @@
 -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
 <script src="/app/_auth.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -1217,8 +1218,11 @@ function renderCard(card) {
           <button class="action ${card.saved ? 'is-saved' : ''}" data-action="save" data-id="${card.id}">
             <svg viewBox="0 0 24 24" fill="${card.saved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
           </button>
-          <button class="action" data-action="share" data-id="${card.id}">
+          <button class="action" data-action="share" data-id="${card.id}" title="Copy share link">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+          <button class="action" data-action="download" data-id="${card.id}" title="Download as image">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </button>
         </div>
       </div>
@@ -1243,7 +1247,7 @@ function renderFeed() {
 
   // Wire action buttons (like, comment, save persist, share).
   grid.querySelectorAll('.action').forEach(btn => {
-    btn.addEventListener('click', e => {
+    btn.addEventListener('click', async e => {
       e.preventDefault();
       const action = btn.dataset.action;
       const id = btn.dataset.id;
@@ -1274,6 +1278,8 @@ function renderFeed() {
         const orig = btn.innerHTML;
         btn.innerHTML = orig + '<span style="font-size: 10px;">copied</span>';
         setTimeout(() => { btn.innerHTML = orig; }, 1200);
+      } else if (action === 'download') {
+        await downloadCardAsPng(btn, card);
       } else if (action === 'comment') {
         toggleCommentThread(card, btn);
       }
@@ -1375,6 +1381,34 @@ function toggleCommentThread(card, btn) {
   thread.classList.toggle('hidden');
 }
 
+
+async function downloadCardAsPng(btn, card) {
+  if (!window.htmlToImage) { console.warn('html-to-image not loaded'); return; }
+  const article = btn.closest('article');
+  const cardEl = article ? article.querySelector('.card') : null;
+  if (!cardEl) return;
+  const origInner = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = origInner + '<span style="font-size: 10px;">…</span>';
+  try {
+    const dataUrl = await window.htmlToImage.toPng(cardEl, {
+      pixelRatio: 2,
+      backgroundColor: '#0a0a0a',
+      cacheBust: true,
+    });
+    const link = document.createElement('a');
+    const safeTitle = (card.title || 'card').replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 40);
+    link.download = `logmystack-${safeTitle}.png`;
+    link.href = dataUrl;
+    link.click();
+    btn.innerHTML = origInner + '<span style="font-size: 10px;">saved</span>';
+  } catch (e) {
+    console.error('PNG export failed:', e);
+    btn.innerHTML = origInner + '<span style="font-size: 10px; color: var(--danger);">err</span>';
+  } finally {
+    setTimeout(() => { btn.innerHTML = origInner; btn.disabled = false; }, 1200);
+  }
+}
 
 function render() {
   renderFilterChips();
