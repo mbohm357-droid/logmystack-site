@@ -1512,16 +1512,24 @@ async function downloadPreviewAsPng() {
   const btn = document.getElementById('preview-download-btn');
   if (!btn || !window.htmlToImage) return;
   const mount = document.getElementById('preview-mount');
-  const cardEl = mount ? mount.querySelector('.card') : null;
-  if (!cardEl) { showToast('Pick a compound first'); return; }
+  const srcCard = mount ? mount.querySelector('.card') : null;
+  if (!srcCard) { showToast('Pick a compound first'); return; }
   const orig = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = 'Generating image…';
+  // Clone into an off-screen 420px wrapper for a clean, consistent portrait export
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position: fixed; left: -99999px; top: 0; width: 420px; background: #0a0a0a; padding: 0; z-index: -1;';
+  const clone = srcCard.cloneNode(true);
+  clone.style.width = '420px';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
   try {
-    const dataUrl = await window.htmlToImage.toPng(cardEl, {
+    const dataUrl = await window.htmlToImage.toPng(clone, {
       pixelRatio: 2,
       backgroundColor: '#0a0a0a',
       cacheBust: true,
+      width: 420,
     });
     const link = document.createElement('a');
     const title = (state.title || 'untitled').replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 40);
@@ -1533,6 +1541,7 @@ async function downloadPreviewAsPng() {
     console.error('PNG export failed:', e);
     showToast('Export failed — see console');
   } finally {
+    document.body.removeChild(wrapper);
     btn.innerHTML = orig; btn.disabled = false;
   }
 }

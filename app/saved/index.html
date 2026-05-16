@@ -1142,16 +1142,25 @@ function toggleCommentThread(card, btn) {
 async function downloadCardAsPng(btn, card) {
   if (!window.htmlToImage) { console.warn('html-to-image not loaded'); return; }
   const article = btn.closest('article');
-  const cardEl = article ? article.querySelector('.card') : null;
-  if (!cardEl) return;
+  const srcCard = article ? article.querySelector('.card') : null;
+  if (!srcCard) return;
   const origInner = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = origInner + '<span style="font-size: 10px;">…</span>';
+  // Clone into an off-screen 420px wrapper so the exported image has the
+  // intended portrait card shape regardless of where the original was rendered.
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position: fixed; left: -99999px; top: 0; width: 420px; background: #0a0a0a; padding: 0; z-index: -1;';
+  const clone = srcCard.cloneNode(true);
+  clone.style.width = '420px';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
   try {
-    const dataUrl = await window.htmlToImage.toPng(cardEl, {
+    const dataUrl = await window.htmlToImage.toPng(clone, {
       pixelRatio: 2,
       backgroundColor: '#0a0a0a',
       cacheBust: true,
+      width: 420,
     });
     const link = document.createElement('a');
     const safeTitle = (card.title || 'card').replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 40);
@@ -1163,6 +1172,7 @@ async function downloadCardAsPng(btn, card) {
     console.error('PNG export failed:', e);
     btn.innerHTML = origInner + '<span style="font-size: 10px; color: var(--danger);">err</span>';
   } finally {
+    document.body.removeChild(wrapper);
     setTimeout(() => { btn.innerHTML = origInner; btn.disabled = false; }, 1200);
   }
 }
