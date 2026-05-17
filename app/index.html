@@ -415,6 +415,32 @@
     color: var(--warn); padding: 6px 24px; text-align: center;
     font-size: 11.5px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.03em;
   }
+
+  /* Daily check-in slider anchor labels */
+  .ci-slider-block {
+    margin-bottom: 14px;
+  }
+  .ci-slider-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .ci-slider-head label {
+    font-size: 12px; font-weight: 500; color: var(--text);
+    margin: 0;
+  }
+  .ci-slider-head .ci-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px; font-weight: 700; color: var(--accent);
+  }
+  .ci-slider-anchors {
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; color: var(--muted-2);
+    letter-spacing: 0.04em;
+    margin-top: 6px;
+  }
+  .ci-slider-anchors span:first-child { text-align: left; }
+  .ci-slider-anchors span:last-child  { text-align: right; }
 </style>
 
 <link rel="manifest" href="/manifest.json">
@@ -925,20 +951,38 @@
   <div id="modal-checkin" class="modal hidden" onclick="event.stopPropagation()">
     <h2>Daily check-in</h2>
     <p class="sub">Quick rating for energy, sleep, mood, plus weight.</p>
-    <div class="metric-input-row">
-      <label>Energy</label>
+    <div class="ci-slider-block">
+      <div class="ci-slider-head">
+        <label for="ci-energy">Energy</label>
+        <span class="ci-value" id="ci-energy-v">7</span>
+      </div>
       <input type="range" min="1" max="10" step="0.5" value="7" class="metric-slider" id="ci-energy" oninput="document.getElementById('ci-energy-v').textContent=this.value">
-      <span class="metric-value" id="ci-energy-v">7</span>
+      <div class="ci-slider-anchors">
+        <span>1 · Drained, can't focus</span>
+        <span>10 · Peak, sustained all day</span>
+      </div>
     </div>
-    <div class="metric-input-row">
-      <label>Sleep</label>
+    <div class="ci-slider-block">
+      <div class="ci-slider-head">
+        <label for="ci-sleep">Sleep</label>
+        <span class="ci-value" id="ci-sleep-v">7</span>
+      </div>
       <input type="range" min="1" max="10" step="0.5" value="7" class="metric-slider" id="ci-sleep" oninput="document.getElementById('ci-sleep-v').textContent=this.value">
-      <span class="metric-value" id="ci-sleep-v">7</span>
+      <div class="ci-slider-anchors">
+        <span>1 · Restless, woke up tired</span>
+        <span>10 · Deep, restorative</span>
+      </div>
     </div>
-    <div class="metric-input-row">
-      <label>Mood</label>
+    <div class="ci-slider-block">
+      <div class="ci-slider-head">
+        <label for="ci-mood">Mood</label>
+        <span class="ci-value" id="ci-mood-v">7</span>
+      </div>
       <input type="range" min="1" max="10" step="0.5" value="7" class="metric-slider" id="ci-mood" oninput="document.getElementById('ci-mood-v').textContent=this.value">
-      <span class="metric-value" id="ci-mood-v">7</span>
+      <div class="ci-slider-anchors">
+        <span>1 · Low, flat, irritable</span>
+        <span>10 · Consistently good, even</span>
+      </div>
     </div>
     <label>Weight (optional)</label>
     <input type="number" step="0.1" class="input-field" id="ci-weight" placeholder="lb">
@@ -1062,8 +1106,10 @@ function dayOfStack(stack) {
   return Math.floor((now - start) / (1000*60*60*24)) + 1;
 }
 function calcStreak() {
-  // Count consecutive days backwards from today with at least one event
-  const events = [...state.doses, ...state.notes, ...state.checkins];
+  // Count consecutive days backwards from today with a daily check-in.
+  // We use check-ins only because doses can be every-other-day or weekly,
+  // and we want the streak to reward "showed up to log how you feel."
+  const events = state.checkins || [];
   if (!events.length) return 0;
   const dates = new Set(events.map(e => (e.timestamp || e.date || '').slice(0,10)));
   let streak = 0;
@@ -1132,13 +1178,13 @@ function renderToday() {
     chipNum.textContent = streak;
     if (streak === 0) {
       chip.classList.add('cold');
-      chipLabel.textContent = 'Log today to start your streak';
+      chipLabel.textContent = 'Daily check-in to start your streak';
     } else if (streak === 1) {
       chip.classList.remove('cold');
-      chipLabel.textContent = `Day streak — log tomorrow to keep it going`;
+      chipLabel.textContent = `Day streak — check in tomorrow to keep it going`;
     } else {
       chip.classList.remove('cold');
-      chipLabel.textContent = `Day streak — keep logging to extend it`;
+      chipLabel.textContent = `Day streak — keep checking in to extend it`;
     }
   }
 
