@@ -213,19 +213,49 @@
 
 
   /* Compliance heatmap — GitHub-contribution-style grid (13w × 7d). */
-  .heatmap-wrap { display: flex; align-items: flex-start; gap: 10px; }
+  .heatmap-wrap {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 6px 8px;
+    width: max-content;
+    overflow-x: auto;
+  }
+  .heatmap-month-row {
+    grid-column: 2;
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: repeat(13, 14px);
+    gap: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted-2);
+    height: 14px;
+    align-items: center;
+  }
+  .heatmap-month-row > div {
+    white-space: nowrap;
+    overflow: visible;
+    transform: translateX(-1px);
+  }
   .heatmap-day-labels {
-    display: grid; grid-template-rows: repeat(7, 14px); gap: 3px;
-    font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
-    color: var(--muted-2); padding-top: 1px;
+    grid-column: 1;
+    grid-row: 2;
+    display: grid;
+    grid-template-rows: repeat(7, 14px);
+    gap: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: var(--muted-2);
+    align-items: center;
   }
   .heatmap-grid {
+    grid-column: 2;
+    grid-row: 2;
     display: grid;
     grid-template-columns: repeat(13, 14px);
     grid-template-rows: repeat(7, 14px);
     grid-auto-flow: column;
     gap: 3px;
-    width: max-content;
   }
   .heatmap-cell {
     width: 14px; height: 14px; border-radius: 3px;
@@ -632,8 +662,10 @@
       </div>
     </div>
     <div class="heatmap-wrap mt-4">
+      <div></div>
+      <div class="heatmap-month-row" id="heatmap-months"></div>
       <div class="heatmap-day-labels">
-        <div>Sun</div><div></div><div>Tue</div><div></div><div>Thu</div><div></div><div>Sat</div>
+        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
       </div>
       <div class="heatmap-grid" id="heatmap-grid"></div>
     </div>
@@ -1557,6 +1589,25 @@ function renderHeatmap() {
   today.setHours(0,0,0,0);
   // Find the most-recent Saturday (end of current week if Sunday-start)
   const todayIdx = today.getDay(); // 0 = Sun .. 6 = Sat
+
+  // Month labels — one per column, filled when the month transitions
+  const monthRow = document.getElementById('heatmap-months');
+  if (monthRow) {
+    const monthLabels = new Array(13).fill('');
+    let lastMonth = -1;
+    for (let week = 12; week >= 0; week--) {
+      // Anchor date = the Sunday of this column (top of column)
+      const offsetSun = (week * 7) + todayIdx;
+      const dateSun = new Date(today);
+      dateSun.setDate(today.getDate() - offsetSun);
+      const colIdx = 12 - week;
+      if (dateSun.getMonth() !== lastMonth) {
+        monthLabels[colIdx] = dateSun.toLocaleString('en-US', { month: 'short' });
+        lastMonth = dateSun.getMonth();
+      }
+    }
+    monthRow.innerHTML = monthLabels.map(l => `<div>${l}</div>`).join('');
+  }
   const cells = [];
   // Walk back 13 weeks: 13 columns × 7 rows.
   // Each column is one week; the rightmost column contains the current week.

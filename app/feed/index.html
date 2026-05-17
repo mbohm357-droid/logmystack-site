@@ -1094,7 +1094,7 @@ function renderConstellation(compounds, currentWeek) {
     const tipY = layout[i].y + half + 6;
     return `<g class="glyph-group">
       <rect x="${px}" y="${py}" width="${glyphSize}" height="${glyphSize}" fill="transparent" pointer-events="all"/>
-      <svg x="${px}" y="${py}" width="${glyphSize}" height="${glyphSize}" viewBox="0 0 100 100" style="color: ${color}; overflow: visible; pointer-events: none;">${inner}</svg>
+      <g transform="translate(${px} ${py}) scale(${glyphSize/100})" style="color: ${color}; pointer-events: none;">${inner}</g>
       ${badgeHtml}
       <rect class="glyph-label-bg" x="${tipX}" y="${tipY - 1}" width="${tipW}" height="12" rx="2" fill="#0a0a0a" stroke="${color}" stroke-width="0.4"/>
       <text class="glyph-label" x="${layout[i].x}" y="${tipY + 4}" text-anchor="middle" fill="${color}" font-family="JetBrains Mono, monospace" font-size="4.8" font-weight="600">${tipName}</text>
