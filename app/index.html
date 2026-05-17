@@ -1590,20 +1590,21 @@ function renderHeatmap() {
   // Find the most-recent Saturday (end of current week if Sunday-start)
   const todayIdx = today.getDay(); // 0 = Sun .. 6 = Sat
 
-  // Month labels — one per column, filled when the month transitions
+  // Month labels — anchored at the column containing the 1st of each
+  // month, so they're naturally ~4 cols apart (no FebMar overlap).
   const monthRow = document.getElementById('heatmap-months');
   if (monthRow) {
     const monthLabels = new Array(13).fill('');
-    let lastMonth = -1;
     for (let week = 12; week >= 0; week--) {
-      // Anchor date = the Sunday of this column (top of column)
-      const offsetSun = (week * 7) + todayIdx;
-      const dateSun = new Date(today);
-      dateSun.setDate(today.getDate() - offsetSun);
-      const colIdx = 12 - week;
-      if (dateSun.getMonth() !== lastMonth) {
-        monthLabels[colIdx] = dateSun.toLocaleString('en-US', { month: 'short' });
-        lastMonth = dateSun.getMonth();
+      for (let dow = 0; dow < 7; dow++) {
+        const offsetFromToday = (week * 7) + (todayIdx - dow);
+        if (offsetFromToday < 0) continue;
+        const date = new Date(today);
+        date.setDate(today.getDate() - offsetFromToday);
+        if (date.getDate() === 1) {
+          const colIdx = 12 - week;
+          monthLabels[colIdx] = date.toLocaleString('en-US', { month: 'short' });
+        }
       }
     }
     monthRow.innerHTML = monthLabels.map(l => `<div>${l}</div>`).join('');

@@ -820,7 +820,10 @@ function renderConstellation(compounds, currentWeek) {
   const glyphsHtml = compounds.slice(0, n).map((c, i) => {
     const meta = COMPOUND[c.slug];
     const color = meta ? TYPE_COLOR[meta.type] : 'var(--muted)';
-    const inner = GLYPH[c.slug] || `<circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="2"/>`;
+    const innerRaw = GLYPH[c.slug] || `<circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="2"/>`;
+    // Bake type color into the glyph so html-to-image PNG export
+    // doesn't depend on CSS cascade (was breaking on download).
+    const inner = innerRaw.replace(/currentColor/g, color);
     const px = layout[i].x - half;
     const py = layout[i].y - half;
     const startedWeek = c.startedWeek || 1;
