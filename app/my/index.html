@@ -873,9 +873,19 @@ function renderConstellation(compounds, currentWeek) {
     const meta = COMPOUND[c.slug];
     const color = meta ? TYPE_COLOR[meta.type] : 'var(--muted)';
     const innerRaw = GLYPH[c.slug] || `<circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="2"/>`;
-    // Bake type color into the glyph so html-to-image PNG export
-    // doesn't depend on CSS cascade (was breaking on download).
-    const inner = innerRaw.replace(/currentColor/g, color);
+    // Bake type color into the glyph so html-to-image PNG export doesn't
+    // depend on CSS cascade. Two passes:
+    //   (a) replace literal `currentColor` references with the hex color
+    //   (b) add an explicit `stroke="<color>"` to any line/path/rect/etc.
+    //       that has `stroke-width` but no `stroke=` attribute — inheritance
+    //       through <g stroke="..."> survives screen render but can be lost
+    //       in html-to-image's clone+serialize for PNG export.
+    let inner = innerRaw.replace(/currentColor/g, color);
+    inner = inner.replace(/<(line|path|rect|circle|ellipse|polygon|polyline)\b([^>]+)>/g, function(m, tag, attrs) {
+      if (!/\bstroke-width\b/.test(attrs)) return m;
+      if (/\bstroke\s*=/.test(attrs)) return m;
+      return '<' + tag + ' stroke="' + color + '"' + attrs + '>';
+    });
     const px = layout[i].x - half;
     const py = layout[i].y - half;
     const startedWeek = c.startedWeek || 1;
@@ -894,10 +904,12 @@ function renderConstellation(compounds, currentWeek) {
       } else {
         badgeText = 'W' + startedWeek + '–' + stoppedWeek; badgeBg = '#fbbf24';
       }
-      // Anchor at the upper-right of the character's head (not the bbox corner)
-      // so the badge reads as attached to the figure.
-      const bAnchorX = layout[i].x + half * 0.32 + 6;
-      const bAnchorY = layout[i].y - half * 0.78;
+      // Float the badge ABOVE the head (not on the face). Badge bottom sits
+      // just above the bbox top edge; horizontally centered slightly right
+      // of the character's vertical axis. The badge text extends LEFTWARD
+      // from this anchor so it stays attached visually.
+      const bAnchorX = layout[i].x + half * 0.6;
+      const bAnchorY = layout[i].y - half - 1.5;
       const bW = badgeText.length * 2.8 + 4;
       badgeHtml = `<g pointer-events="none"><rect x="${bAnchorX - bW}" y="${bAnchorY}" width="${bW}" height="6.5" rx="1.6" fill="${badgeBg}" stroke="#0a0a0a" stroke-width="0.4"/><text x="${bAnchorX - bW/2}" y="${bAnchorY + 4.7}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="3.7" font-weight="700" fill="#0a0a0a">${badgeText}</text></g>`;
     }

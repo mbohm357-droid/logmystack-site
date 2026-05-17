@@ -441,6 +441,23 @@
   }
   .ci-slider-anchors span:first-child { text-align: left; }
   .ci-slider-anchors span:last-child  { text-align: right; }
+
+  /* Daily check-in: slider must fill the row (.ci-slider-block isn't flex
+     so we override the .metric-slider `flex: 1` rule used elsewhere). */
+  .ci-slider-block .metric-slider {
+    width: 100%;
+    flex: none;
+    display: block;
+    margin: 4px 0 0;
+    height: 6px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .ci-slider-block .metric-slider::-webkit-slider-thumb {
+    width: 18px; height: 18px;
+    border: 2px solid #052e1a;
+    box-shadow: 0 0 0 4px rgba(52,211,153,0.15);
+  }
 </style>
 
 <link rel="manifest" href="/manifest.json">
