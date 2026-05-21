@@ -212,70 +212,78 @@
 
 
 
-  /* Compliance heatmap — GitHub-contribution-style grid (13w × 7d). */
-  .heatmap-wrap {
-    display: grid;
-    grid-template-columns: auto auto;
-    gap: 6px 8px;
-    width: max-content;
-    overflow-x: auto;
+  /* Activity calendar (History tab) — navigable month view. */
+  .cal-panel { max-width: 540px; }
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px; gap: 12px; flex-wrap: wrap;
   }
-  .heatmap-month-row {
-    grid-column: 2;
-    grid-row: 1;
-    display: grid;
-    grid-template-columns: repeat(13, 14px);
-    gap: 3px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    color: var(--muted-2);
-    height: 14px;
-    align-items: center;
-  }
-  .heatmap-month-row > div {
-    white-space: nowrap;
-    overflow: visible;
-    transform: translateX(-1px);
-  }
-  .heatmap-day-labels {
-    grid-column: 1;
-    grid-row: 2;
-    display: grid;
-    grid-template-rows: repeat(7, 14px);
-    gap: 3px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9.5px;
-    color: var(--muted-2);
-    align-items: center;
-  }
-  .heatmap-grid {
-    grid-column: 2;
-    grid-row: 2;
-    display: grid;
-    grid-template-columns: repeat(13, 14px);
-    grid-template-rows: repeat(7, 14px);
-    grid-auto-flow: column;
-    gap: 3px;
-  }
-  .heatmap-cell {
-    width: 14px; height: 14px; border-radius: 3px;
+  .cal-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+  .cal-nav { display: flex; gap: 6px; align-items: center; }
+  .cal-nav-btn {
+    width: 32px; height: 32px; border-radius: 8px;
     background: var(--panel-2); border: 1px solid var(--border);
-    transition: transform 0.1s;
-    flex-shrink: 0;
+    color: var(--text); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
   }
-  .heatmap-cell.hide { background: transparent; border: none; }
-  .heatmap-cell.l1 { background: rgba(52,211,153,0.20); border-color: rgba(52,211,153,0.30); }
-  .heatmap-cell.l2 { background: rgba(52,211,153,0.45); border-color: rgba(52,211,153,0.55); }
-  .heatmap-cell.l3 { background: rgba(52,211,153,0.72); border-color: rgba(52,211,153,0.82); }
-  .heatmap-cell.l4 { background: rgba(52,211,153,0.96); border-color: rgba(52,211,153,1.00); }
-  .heatmap-cell:hover { transform: scale(1.35); cursor: pointer; }
-  .heatmap-legend {
-    display: flex; align-items: center; gap: 8px; margin-top: 14px;
+  .cal-nav-btn:hover:not(:disabled) { border-color: #333; background: #1f1f1f; }
+  .cal-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .cal-today-btn {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); cursor: pointer;
+    font-size: 11px; font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    height: 32px; padding: 0 12px; border-radius: 8px; transition: all 0.15s;
+  }
+  .cal-today-btn:hover { color: var(--text); border-color: #333; }
+  .cal-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 6px; margin-bottom: 6px;
+  }
+  .cal-weekday {
+    text-align: center; font-size: 9.5px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .cal-day {
+    aspect-ratio: 1;
+    border-radius: 9px;
+    border: 1px solid var(--border-2);
+    background: var(--panel-2);
+    padding: 7px 8px;
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .cal-day.empty { background: transparent; border: none; }
+  .cal-day-num {
+    font-size: 12px; font-family: 'JetBrains Mono', monospace;
+    color: var(--muted-2); line-height: 1;
+  }
+  .cal-day.today { border-color: var(--accent); }
+  .cal-day.today .cal-day-num { color: var(--accent); font-weight: 700; }
+  .cal-day.has-checkin {
+    background: rgba(52,211,153,0.10);
+    border-color: rgba(52,211,153,0.35);
+  }
+  .cal-day.has-checkin .cal-day-num { color: var(--accent); }
+  .cal-day-checkmark {
+    position: absolute; top: 6px; right: 6px;
+    color: var(--accent); line-height: 0;
+  }
+  .cal-day-dots {
+    display: flex; gap: 3px; margin-top: auto; flex-wrap: wrap;
+  }
+  .cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .cal-dot.dose { background: #93c5fd; }
+  .cal-dot.note { background: var(--warn); }
+  .cal-legend {
+    display: flex; align-items: center; gap: 16px; margin-top: 16px;
     font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
-    color: var(--muted-2); letter-spacing: 0.04em;
+    color: var(--muted-2); letter-spacing: 0.03em; flex-wrap: wrap;
   }
-  .heatmap-legend-cells { display: flex; gap: 3px; }
-  .heatmap-legend-cells .heatmap-cell { width: 11px; height: 11px; border-radius: 2px; }
+  .cal-legend-item { display: flex; align-items: center; gap: 6px; }
 
   /* Cycle progress bar (under Today greeting when active stack has duration). */
   .cycle-progress {
@@ -696,32 +704,31 @@
       </select>
     </div>
   </div>
-  <!-- Compliance heatmap (P2 feature) -->
-  <div class="panel p-6 mb-6">
-    <div class="flex items-start justify-between mb-2 flex-wrap gap-3">
-      <div>
-        <h2 class="text-base font-bold tracking-tight">Compliance</h2>
-        <p class="text-xs muted mt-1">Last 13 weeks. Each square is one day — brighter = more logged.</p>
+  <!-- Activity calendar -->
+  <div class="panel p-6 mb-6 cal-panel">
+    <div class="cal-header">
+      <div class="cal-title" id="cal-title">—</div>
+      <div class="cal-nav">
+        <button class="cal-today-btn" id="cal-today" onclick="calGoToday()">Today</button>
+        <button class="cal-nav-btn" id="cal-prev" onclick="calPrevMonth()" aria-label="Previous month">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="cal-nav-btn" id="cal-next" onclick="calNextMonth()" aria-label="Next month">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
       </div>
     </div>
-    <div class="heatmap-wrap mt-4">
-      <div></div>
-      <div class="heatmap-month-row" id="heatmap-months"></div>
-      <div class="heatmap-day-labels">
-        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-      </div>
-      <div class="heatmap-grid" id="heatmap-grid"></div>
+    <div class="cal-weekdays">
+      <div class="cal-weekday">Sun</div><div class="cal-weekday">Mon</div><div class="cal-weekday">Tue</div><div class="cal-weekday">Wed</div><div class="cal-weekday">Thu</div><div class="cal-weekday">Fri</div><div class="cal-weekday">Sat</div>
     </div>
-    <div class="heatmap-legend">
-      <span>Less</span>
-      <div class="heatmap-legend-cells">
-        <div class="heatmap-cell"></div>
-        <div class="heatmap-cell l1"></div>
-        <div class="heatmap-cell l2"></div>
-        <div class="heatmap-cell l3"></div>
-        <div class="heatmap-cell l4"></div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-legend">
+      <div class="cal-legend-item">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Checked in
       </div>
-      <span>More</span>
+      <div class="cal-legend-item"><span class="cal-dot dose"></span> Dose logged</div>
+      <div class="cal-legend-item"><span class="cal-dot note"></span> Note</div>
     </div>
   </div>
 
@@ -1632,74 +1639,102 @@ function confirmDeleteCompound(stackId, compoundId) {
 
 // ============== HISTORY TAB ==============
 
-function renderHeatmap() {
-  const grid = document.getElementById('heatmap-grid');
+function renderCalendar() {
+  const grid = document.getElementById('cal-grid');
   if (!grid) return;
-  // Per-day event count
-  const counts = {};
-  function addEvents(arr) {
+  // Default the displayed month to the current month on first render.
+  if (window._calYear === undefined) {
+    const now = new Date();
+    window._calYear = now.getFullYear();
+    window._calMonth = now.getMonth();
+  }
+  const calYear = window._calYear, calMonth = window._calMonth;
+
+  // Index every event by ISO date.
+  const byDate = {};
+  function index(arr, key) {
     (arr || []).forEach(e => {
       const day = ((e.timestamp || e.date || '') + '').slice(0, 10);
-      if (day) counts[day] = (counts[day] || 0) + 1;
+      if (!day) return;
+      if (!byDate[day]) byDate[day] = { checkin: 0, dose: 0, note: 0 };
+      byDate[day][key]++;
     });
   }
-  addEvents(state.doses);
-  addEvents(state.notes);
-  addEvents(state.checkins);
+  index(state.checkins, 'checkin');
+  index(state.doses, 'dose');
+  index(state.notes, 'note');
 
-  // Build 13 weeks × 7 days, columns = weeks (oldest left), rows = Sun..Sat
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  // Find the most-recent Saturday (end of current week if Sunday-start)
-  const todayIdx = today.getDay(); // 0 = Sun .. 6 = Sat
+  const first = new Date(calYear, calMonth, 1);
+  const startDow = first.getDay();                       // 0 = Sun
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const todayISO = new Date().toISOString().slice(0, 10);
 
-  // Month labels — anchored at the column containing the 1st of each
-  // month, so they're naturally ~4 cols apart (no FebMar overlap).
-  const monthRow = document.getElementById('heatmap-months');
-  if (monthRow) {
-    const monthLabels = new Array(13).fill('');
-    for (let week = 12; week >= 0; week--) {
-      for (let dow = 0; dow < 7; dow++) {
-        const offsetFromToday = (week * 7) + (todayIdx - dow);
-        if (offsetFromToday < 0) continue;
-        const date = new Date(today);
-        date.setDate(today.getDate() - offsetFromToday);
-        if (date.getDate() === 1) {
-          const colIdx = 12 - week;
-          monthLabels[colIdx] = date.toLocaleString('en-US', { month: 'short' });
-        }
-      }
-    }
-    monthRow.innerHTML = monthLabels.map(l => `<div>${l}</div>`).join('');
-  }
+  const titleEl = document.getElementById('cal-title');
+  if (titleEl) titleEl.textContent = first.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
   const cells = [];
-  // Walk back 13 weeks: 13 columns × 7 rows.
-  // Each column is one week; the rightmost column contains the current week.
-  for (let week = 12; week >= 0; week--) {
-    for (let dow = 0; dow < 7; dow++) {  // 0 = Sun
-      // Anchor date for this cell:
-      const offsetFromToday = (week * 7) + (todayIdx - dow);
-      const date = new Date(today);
-      date.setDate(today.getDate() - offsetFromToday);
-      if (date > today) { cells.push({ hide: true }); continue; }
-      const iso = date.toISOString().slice(0, 10);
-      const c = counts[iso] || 0;
-      let level = 0;
-      if (c === 1) level = 1;
-      else if (c >= 2 && c <= 3) level = 2;
-      else if (c >= 4 && c <= 5) level = 3;
-      else if (c >= 6) level = 4;
-      cells.push({ iso, count: c, level });
-    }
+  for (let i = 0; i < startDow; i++) cells.push(null);   // leading blanks
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    cells.push({ day: d, iso: iso, ev: byDate[iso] || null });
   }
 
-  // Grid is column-flow so we render in (week, dow) order
   grid.innerHTML = cells.map(cell => {
-    if (cell.hide) return `<div class="heatmap-cell hide"></div>`;
-    const cls = cell.level > 0 ? ` l${cell.level}` : '';
-    const tip = `${formatDateShort(cell.iso)} · ${cell.count} event${cell.count===1?'':'s'}`;
-    return `<div class="heatmap-cell${cls}" title="${tip}"></div>`;
+    if (!cell) return '<div class="cal-day empty"></div>';
+    const ev = cell.ev;
+    const hasCheckin = !!(ev && ev.checkin > 0);
+    const isToday = cell.iso === todayISO;
+    let dots = '';
+    if (ev) {
+      for (let i = 0; i < Math.min(ev.dose, 4); i++) dots += '<span class="cal-dot dose"></span>';
+      for (let i = 0; i < Math.min(ev.note, 3); i++) dots += '<span class="cal-dot note"></span>';
+    }
+    const check = hasCheckin
+      ? '<span class="cal-day-checkmark"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>'
+      : '';
+    let tip = cell.iso;
+    if (ev) {
+      const parts = [];
+      if (ev.checkin) parts.push(ev.checkin + ' check-in');
+      if (ev.dose) parts.push(ev.dose + ' dose' + (ev.dose === 1 ? '' : 's'));
+      if (ev.note) parts.push(ev.note + ' note' + (ev.note === 1 ? '' : 's'));
+      tip += ' \u00b7 ' + parts.join(', ');
+    }
+    return '<div class="cal-day ' + (hasCheckin ? 'has-checkin ' : '') + (isToday ? 'today' : '') + '" title="' + tip + '">'
+      + '<span class="cal-day-num">' + cell.day + '</span>'
+      + check
+      + '<span class="cal-day-dots">' + dots + '</span>'
+      + '</div>';
   }).join('');
+
+  // "Next" is disabled when viewing the current month; "Today" hides there too.
+  const now = new Date();
+  const atCurrent = (calYear === now.getFullYear() && calMonth === now.getMonth());
+  const nextBtn = document.getElementById('cal-next');
+  if (nextBtn) nextBtn.disabled = atCurrent;
+  const todayBtn = document.getElementById('cal-today');
+  if (todayBtn) todayBtn.style.visibility = atCurrent ? 'hidden' : 'visible';
+}
+
+function calPrevMonth() {
+  if (window._calYear === undefined) { renderCalendar(); }
+  window._calMonth--;
+  if (window._calMonth < 0) { window._calMonth = 11; window._calYear--; }
+  renderCalendar();
+}
+function calNextMonth() {
+  if (window._calYear === undefined) { renderCalendar(); return; }
+  const now = new Date();
+  if (window._calYear === now.getFullYear() && window._calMonth === now.getMonth()) return;
+  window._calMonth++;
+  if (window._calMonth > 11) { window._calMonth = 0; window._calYear++; }
+  renderCalendar();
+}
+function calGoToday() {
+  const now = new Date();
+  window._calYear = now.getFullYear();
+  window._calMonth = now.getMonth();
+  renderCalendar();
 }
 
 function formatDateShort(iso) {
@@ -1710,7 +1745,7 @@ function formatDateShort(iso) {
 }
 
 function renderHistory() {
-  renderHeatmap();
+  renderCalendar();
   const filter = document.getElementById('history-filter').value;
   const events = [];
   if (filter === 'all' || filter === 'dose') {
