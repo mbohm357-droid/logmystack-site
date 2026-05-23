@@ -987,6 +987,94 @@ function weekTagText(c) {
   return ' · W' + start + '–W' + stop;
 }
 
+
+function transformGlyphSVG(inner, tx, ty, scale) {
+  // Pre-transform every primitive's coords so we don't need a parent
+  // <g transform>. html-to-image PNG export was losing/misapplying the
+  // SVG transform attribute during clone+serialize, causing glyphs to
+  // render at wrong positions.
+  function absX(v) { return (tx + scale * parseFloat(v)).toFixed(3); }
+  function absY(v) { return (ty + scale * parseFloat(v)).toFixed(3); }
+  function relS(v) { return (scale * parseFloat(v)).toFixed(3); }
+  let out = inner;
+  out = out.replace(/<circle([^>]+)>/g, function(m, a) {
+    a = a.replace(/cx="([^"]+)"/, function(_,v){return 'cx="'+absX(v)+'"';});
+    a = a.replace(/cy="([^"]+)"/, function(_,v){return 'cy="'+absY(v)+'"';});
+    a = a.replace(/(\s)r="([^"]+)"/, function(_,b,v){return b+'r="'+relS(v)+'"';});
+    a = a.replace(/stroke-width="([^"]+)"/, function(_,v){return 'stroke-width="'+relS(v)+'"';});
+    return '<circle'+a+'>';
+  });
+  out = out.replace(/<ellipse([^>]+)>/g, function(m, a) {
+    a = a.replace(/cx="([^"]+)"/, function(_,v){return 'cx="'+absX(v)+'"';});
+    a = a.replace(/cy="([^"]+)"/, function(_,v){return 'cy="'+absY(v)+'"';});
+    a = a.replace(/rx="([^"]+)"/, function(_,v){return 'rx="'+relS(v)+'"';});
+    a = a.replace(/ry="([^"]+)"/, function(_,v){return 'ry="'+relS(v)+'"';});
+    a = a.replace(/stroke-width="([^"]+)"/, function(_,v){return 'stroke-width="'+relS(v)+'"';});
+    return '<ellipse'+a+'>';
+  });
+  out = out.replace(/<line([^>]+)>/g, function(m, a) {
+    a = a.replace(/x1="([^"]+)"/, function(_,v){return 'x1="'+absX(v)+'"';});
+    a = a.replace(/y1="([^"]+)"/, function(_,v){return 'y1="'+absY(v)+'"';});
+    a = a.replace(/x2="([^"]+)"/, function(_,v){return 'x2="'+absX(v)+'"';});
+    a = a.replace(/y2="([^"]+)"/, function(_,v){return 'y2="'+absY(v)+'"';});
+    a = a.replace(/stroke-width="([^"]+)"/, function(_,v){return 'stroke-width="'+relS(v)+'"';});
+    return '<line'+a+'>';
+  });
+  out = out.replace(/<rect([^>]+)>/g, function(m, a) {
+    a = a.replace(/(\s|^)x="([^"]+)"/, function(_,b,v){return b+'x="'+absX(v)+'"';});
+    a = a.replace(/(\s|^)y="([^"]+)"/, function(_,b,v){return b+'y="'+absY(v)+'"';});
+    a = a.replace(/width="([^"]+)"/, function(_,v){return 'width="'+relS(v)+'"';});
+    a = a.replace(/height="([^"]+)"/, function(_,v){return 'height="'+relS(v)+'"';});
+    a = a.replace(/(\s)rx="([^"]+)"/, function(_,b,v){return b+'rx="'+relS(v)+'"';});
+    a = a.replace(/(\s)ry="([^"]+)"/, function(_,b,v){return b+'ry="'+relS(v)+'"';});
+    a = a.replace(/stroke-width="([^"]+)"/, function(_,v){return 'stroke-width="'+relS(v)+'"';});
+    return '<rect'+a+'>';
+  });
+  out = out.replace(/<path([^>]*?)d="([^"]+)"([^>]*)>/g, function(m, before, d, after) {
+    const newD = transformPathD(d, tx, ty, scale);
+    let nB = before.replace(/stroke-width="([^"]+)"/, function(_,v){return 'stroke-width="'+relS(v)+'"';});
+    let nA = after.replace(/stroke-width="([^"]+)"/, function(_,v){return 'stroke-width="'+relS(v)+'"';});
+    return '<path'+nB+'d="'+newD+'"'+nA+'>';
+  });
+  out = out.replace(/<text([^>]+)>/g, function(m, a) {
+    a = a.replace(/(\s|^)x="([^"]+)"/, function(_,b,v){return b+'x="'+absX(v)+'"';});
+    a = a.replace(/(\s|^)y="([^"]+)"/, function(_,b,v){return b+'y="'+absY(v)+'"';});
+    a = a.replace(/font-size="([^"]+)"/, function(_,v){return 'font-size="'+relS(v)+'"';});
+    return '<text'+a+'>';
+  });
+  return out;
+}
+function transformPathD(d, tx, ty, scale) {
+  function absX(v) { return tx + scale * v; }
+  function absY(v) { return ty + scale * v; }
+  function relS(v) { return scale * v; }
+  return d.replace(/([MmLlHhVvCcSsQqTtAaZz])([^MmLlHhVvCcSsQqTtAaZz]*)/g, function(m, cmd, argsStr) {
+    if (cmd === 'Z' || cmd === 'z') return cmd;
+    const args = argsStr.trim().split(/[\s,]+/).filter(Boolean).map(parseFloat);
+    if (!args.length) return cmd;
+    const isRel = cmd === cmd.toLowerCase();
+    let na = [];
+    if (cmd === 'H' || cmd === 'h') {
+      na = args.map(v => isRel ? relS(v) : absX(v));
+    } else if (cmd === 'V' || cmd === 'v') {
+      na = args.map(v => isRel ? relS(v) : absY(v));
+    } else if (cmd === 'A' || cmd === 'a') {
+      for (let i = 0; i < args.length; i += 7) {
+        na.push(relS(args[i]), relS(args[i+1]), args[i+2], args[i+3], args[i+4],
+                isRel ? relS(args[i+5]) : absX(args[i+5]),
+                isRel ? relS(args[i+6]) : absY(args[i+6]));
+      }
+    } else {
+      for (let i = 0; i < args.length; i += 2) {
+        na.push(isRel ? relS(args[i]) : absX(args[i]),
+                isRel ? relS(args[i+1]) : absY(args[i+1]));
+      }
+    }
+    return cmd + ' ' + na.map(n => Number(n).toFixed(3)).join(' ');
+  });
+}
+
+
 function renderConstellation(compounds, currentWeek) {
   const positions = {
     1: [ { x: 50, y: 50 } ],
@@ -1067,7 +1155,7 @@ function renderConstellation(compounds, currentWeek) {
     const tipY = layout[i].y + half + 6;
     return `<g class="glyph-group">
       <rect x="${px}" y="${py}" width="${glyphSize}" height="${glyphSize}" fill="transparent" pointer-events="all"/>
-      <g transform="translate(${px} ${py}) scale(${glyphSize/100})" style="color: ${color}; pointer-events: none;">${inner}</g>
+      ${transformGlyphSVG(inner, px, py, glyphSize / 100)}
       ${badgeHtml}
       <rect class="glyph-label-bg" x="${tipX}" y="${tipY - 1}" width="${tipW}" height="12" rx="2" fill="#0a0a0a" stroke="${color}" stroke-width="0.4"/>
       <text class="glyph-label" x="${layout[i].x}" y="${tipY + 4}" text-anchor="middle" fill="${color}" font-family="JetBrains Mono, monospace" font-size="4.8" font-weight="600">${tipName}</text>
