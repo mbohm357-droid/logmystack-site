@@ -9,15 +9,15 @@
 <meta name="theme-color" content="#0a0a0a">
 <meta name="robots" content="noindex, nofollow">
 <!--
-  Feed v0 — preview/mock build.
-  - Card data is mock, defined in MOCK_CARDS below.
-  - No auth gate yet; visible to anyone who knows the URL.
-  - Cards visually consistent with /app/'s design system.
+  My Cards — the signed-in user's own published cards and drafts.
+  - Cards load from Supabase via /app/_cards.js (window.lmsCards.getMyCards).
+  - Auth-gated by /app/_auth.js. Edit / publish / delete persist per user.
 -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
 <script src="/app/_auth.js"></script>
+<script src="/app/_cards.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -679,32 +679,14 @@ const COMPOUND = {
   cerebrolysin:{ display: 'Cerebrolysin',  type: 'cognitive', move: 'Repair'   },
 };
 
-/* ============================================================
- * MOCK CARD DATA
- * 10 sample protocol cards. Replace with API later.
- * ============================================================ */
-const MOCK_CARDS = [];  // saved page only shows snapshots saved by the user
+const MOCK_CARDS = [];  // unused on this page; kept so derived* helpers stay valid
 
 /* ============================================================
- * USER-POSTED CARDS — pulled from localStorage('lms_published'),
- * which is what /app/create/ writes to on Post. Drafts live in
- * 'lms_drafts' and are intentionally NOT shown in the feed.
+ * MY CARDS — the signed-in user's own cards, loaded from Supabase
+ * via window.lmsCards.getMyCards(). Populated in initPage().
  * ============================================================ */
-function loadMyCards() {
-  function readSafe(key, visibilityFallback) {
-    try {
-      const arr = JSON.parse(localStorage.getItem(key) || '[]');
-      return arr.filter(c => c && c.title && Array.isArray(c.compounds))
-                .map(c => ({ ...c, visibility: c.visibility || visibilityFallback }));
-    } catch { return []; }
-  }
-  return {
-    published: readSafe('lms_published', 'public'),
-    drafts: readSafe('lms_drafts', 'draft'),
-  };
-}
-const MY_CARDS = loadMyCards();
-const USER_CARDS = [...MY_CARDS.published, ...MY_CARDS.drafts];
+let MY_CARDS = { published: [], drafts: [] };
+let USER_CARDS = [];
 
 /* ============================================================
  * FILTER STATE
@@ -1107,11 +1089,9 @@ function renderCard(card) {
         </div>
 
         <div class="card-footer">
-          <span>${card.vendor}</span>
+          <span>${card.vendor || '—'}</span>
           <span class="dot">·</span>
           <span class="${card.verified ? 'verified' : ''}">${card.verified ? 'lot verified ✓' : 'unverified'}</span>
-          <span class="dot">·</span>
-          <span>${card.logs} logs</span>
         </div>
       </div>
 
@@ -1145,7 +1125,7 @@ function renderCard(card) {
 
 function wireMyActions(grid) {
   grid.querySelectorAll('.action').forEach(btn => {
-    btn.addEventListener('click', e => {
+    btn.addEventListener('click', async e => {
       e.preventDefault();
       const action = btn.dataset.action;
       const id = btn.dataset.id;
@@ -1158,36 +1138,37 @@ function wireMyActions(grid) {
       }
       if (action === 'delete') {
         if (!confirm(`Delete "${card.title}" permanently?`)) return;
-        const key = (card.visibility === 'draft') ? 'lms_drafts' : 'lms_published';
-        const arr = JSON.parse(localStorage.getItem(key) || '[]').filter(c => c.id !== id);
-        localStorage.setItem(key, JSON.stringify(arr));
-        if (card.visibility === 'draft') {
-          MY_CARDS.drafts = MY_CARDS.drafts.filter(c => c.id !== id);
-        } else {
-          MY_CARDS.published = MY_CARDS.published.filter(c => c.id !== id);
+        btn.disabled = true;
+        try {
+          await window.lmsCards.deleteCard(id);
+        } catch (err) {
+          console.error('delete failed:', err);
+          alert('Could not delete the card — see console.');
+          btn.disabled = false;
+          return;
         }
-        const idx = USER_CARDS.findIndex(c => c.id === id);
-        if (idx >= 0) USER_CARDS.splice(idx, 1);
+        MY_CARDS.drafts = MY_CARDS.drafts.filter(c => c.id !== id);
+        MY_CARDS.published = MY_CARDS.published.filter(c => c.id !== id);
+        USER_CARDS = USER_CARDS.filter(c => c.id !== id);
         renderFeed();
         return;
       }
       if (action === 'publish') {
-        // Move from drafts → published
-        const drafts = JSON.parse(localStorage.getItem('lms_drafts') || '[]');
-        const idx = drafts.findIndex(c => c.id === id);
-        if (idx < 0) return;
-        const moved = drafts.splice(idx, 1)[0];
-        moved.visibility = 'public';
-        moved.publishedAt = new Date().toISOString();
-        delete moved.savedAt;
-        localStorage.setItem('lms_drafts', JSON.stringify(drafts));
-        const published = JSON.parse(localStorage.getItem('lms_published') || '[]');
-        published.unshift(moved);
-        localStorage.setItem('lms_published', JSON.stringify(published));
+        btn.disabled = true;
+        try {
+          await window.lmsCards.publishDraft(id);
+        } catch (err) {
+          console.error('publish failed:', err);
+          alert('Could not publish the card — see console.');
+          btn.disabled = false;
+          return;
+        }
+        // Move the card from drafts → published in the local model.
+        card.visibility = 'public';
         MY_CARDS.drafts = MY_CARDS.drafts.filter(c => c.id !== id);
-        MY_CARDS.published.unshift({ ...moved });
-        const usrIdx = USER_CARDS.findIndex(c => c.id === id);
-        if (usrIdx >= 0) USER_CARDS[usrIdx] = { ...moved };
+        if (!MY_CARDS.published.some(c => c.id === id)) {
+          MY_CARDS.published.unshift(card);
+        }
         renderFeed();
         return;
       }
@@ -1235,98 +1216,6 @@ function sectionBlock(title, count, cards, visibility) {
 
 
 
-/* ============================================================
- * SAVED CARDS + COMMENTS (localStorage v0).
- * ============================================================ */
-function loadSavedCards() {
-  try { return JSON.parse(localStorage.getItem('lms_saved_cards') || '[]'); }
-  catch { return []; }
-}
-function saveSavedCards(arr) {
-  localStorage.setItem('lms_saved_cards', JSON.stringify(arr));
-}
-function toggleSavedCard(card) {
-  const arr = loadSavedCards();
-  const idx = arr.findIndex(c => c.id === card.id);
-  if (idx >= 0) { arr.splice(idx, 1); saveSavedCards(arr); return false; }
-  // Snapshot only safe-to-serialize fields.
-  const snapshot = JSON.parse(JSON.stringify(card));
-  snapshot.savedAt = new Date().toISOString();
-  arr.unshift(snapshot);
-  saveSavedCards(arr);
-  return true;
-}
-function syncSavedStateFromStorage(cards) {
-  const ids = new Set(loadSavedCards().map(c => c.id));
-  cards.forEach(c => { c.saved = ids.has(c.id); });
-}
-
-function loadComments(cardId) {
-  try { return JSON.parse(localStorage.getItem('lms_comments_' + cardId) || '[]'); }
-  catch { return []; }
-}
-function saveComments(cardId, arr) {
-  localStorage.setItem('lms_comments_' + cardId, JSON.stringify(arr));
-}
-function relativeTime(iso) {
-  const then = new Date(iso).getTime();
-  const sec = Math.floor((Date.now() - then) / 1000);
-  if (sec < 60) return 'just now';
-  if (sec < 3600) return Math.floor(sec/60) + 'm ago';
-  if (sec < 86400) return Math.floor(sec/3600) + 'h ago';
-  return Math.floor(sec/86400) + 'd ago';
-}
-function renderCommentList(cardId) {
-  const comments = loadComments(cardId);
-  if (comments.length === 0) {
-    return `<div class="comment-empty">No comments yet. Be the first.</div>`;
-  }
-  return comments.map(c => `
-    <div class="comment">
-      <div class="comment-avatar">${(c.author || '?').substring(0, 1).toUpperCase()}</div>
-      <div class="comment-body">
-        <div class="comment-head">
-          <span class="comment-author">@${escapeHtml(c.author || 'you')}</span>
-          <span class="comment-time">· ${relativeTime(c.timestamp)}</span>
-        </div>
-        <div class="comment-text">${escapeHtml(c.text)}</div>
-      </div>
-    </div>
-  `).join('');
-}
-function renderCommentThreadInner(cardId) {
-  return `
-    <div class="comment-list" id="comment-list-${cardId}">${renderCommentList(cardId)}</div>
-    <form class="comment-form" data-card-id="${cardId}">
-      <input type="text" class="comment-input" placeholder="Add a comment…" maxlength="240" required>
-      <button type="submit" class="comment-submit">Post</button>
-    </form>
-  `;
-}
-function toggleCommentThread(card, btn) {
-  const thread = document.getElementById('thread-' + card.id);
-  if (!thread) return;
-  if (!thread.dataset.rendered) {
-    thread.innerHTML = renderCommentThreadInner(card.id);
-    thread.dataset.rendered = 'true';
-    const form = thread.querySelector('.comment-form');
-    form.addEventListener('submit', ev => {
-      ev.preventDefault();
-      const input = form.querySelector('.comment-input');
-      const text = input.value.trim();
-      if (!text) return;
-      const list = loadComments(card.id);
-      list.push({ author: (window.lms && window.lms.displayName()) || 'you', text, timestamp: new Date().toISOString() });
-      saveComments(card.id, list);
-      document.getElementById('comment-list-' + card.id).innerHTML = renderCommentList(card.id);
-      input.value = '';
-      card.comments = (card.comments || 0) + 1;
-      const countSpan = btn.querySelector('span');
-      if (countSpan) countSpan.textContent = card.comments;
-    });
-  }
-  thread.classList.toggle('hidden');
-}
 
 
 function render() {
@@ -1337,7 +1226,17 @@ function render() {
 state.sort = 'saved';
 
 // Initial render — gated by Supabase auth.
-function initPage(user, userData) {
+async function initPage(user, userData) {
+  const grid = document.getElementById('feed-grid');
+  if (grid) grid.innerHTML = `<div class="my-section-empty">Loading your cards…</div>`;
+  try {
+    MY_CARDS = await window.lmsCards.getMyCards();
+    USER_CARDS = [...MY_CARDS.published, ...MY_CARDS.drafts];
+  } catch (err) {
+    console.error('My cards load failed:', err);
+    if (grid) grid.innerHTML = `<div class="my-section-empty">Couldn't load your cards. Check your connection and refresh.</div>`;
+    return;
+  }
   render();
 }
 window.lms.requireAuth(initPage);

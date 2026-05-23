@@ -12,9 +12,9 @@
   Create flow v0.
   - Active stack is currently mocked at the top of <script>; replace
     getActiveStack() with a Supabase fetch when ready.
-  - On Post → writes the card to localStorage('lms_published'),
-    redirects to /app/feed/ which reads that key and prepends.
-  - On Save as draft → writes to localStorage('lms_drafts').
+  - On Post → upserts the card to Supabase (window.lmsCards.saveCard,
+    visibility 'public'), then redirects to /app/feed/.
+  - On Save as draft → upserts with visibility 'draft'.
   - Card-rendering code is duplicated from /app/feed/index.html for now;
     extract to /app/shared/card.{js,css} once design has stabilized.
 -->
@@ -22,6 +22,7 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
 <script src="/app/_auth.js"></script>
+<script src="/app/_cards.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1232,11 +1233,9 @@ function renderCard(card) {
         `).join('') || '<div style="grid-column: 1 / -1; padding: 12px 8px; text-align: center; color: var(--muted-2); font-size: 12px;">Outcomes will show here as you answer below</div>'}
       </div>
       <div class="card-footer">
-        <span>${escapeHtml(card.vendor)}</span>
+        <span>${escapeHtml(card.vendor || '—')}</span>
         <span class="dot">·</span>
         <span class="${card.verified ? 'verified' : ''}">${card.verified ? 'lot verified ✓' : 'unverified'}</span>
-        <span class="dot">·</span>
-        <span>${card.logs} logs</span>
       </div>
     </div>
   `;
@@ -1570,13 +1569,14 @@ document.getElementById('f-purity').addEventListener('input', e => {
 
 /* ============================================================
  * SUBMIT — Post / Save as draft
- * Cards persist to localStorage so the feed can surface them.
+ * Cards persist to Supabase via window.lmsCards so the feed is
+ * cross-user — every signed-in user sees published cards.
  * ============================================================ */
 function buildCardForSave(visibility) {
   const c = buildPreviewCard();
   return {
     ...c,
-    id: 'user-card-' + Date.now(),
+    id: window.lmsCards.newId(),
     setId: visibility === 'public' ? generateSetId(c) : 'DRAFT',
     visibility,
     author: (window.lms && window.lms.displayName()) || 'you',
@@ -1595,14 +1595,6 @@ function generateSetId(card) {
   const prefix = { healing: 'HR', glp1: 'GM', gh: 'GH', cognitive: 'CG', metabolic: 'MM', gen: 'NX' }[top] || 'NX';
   const num = (Math.floor(Math.random() * 900) + 100);
   return `${prefix}-${num}`;
-}
-
-function persist(key, card) {
-  let arr;
-  try { arr = JSON.parse(localStorage.getItem(key) || '[]'); }
-  catch { arr = []; }
-  arr.unshift(card);
-  localStorage.setItem(key, JSON.stringify(arr));
 }
 
 function showToast(text) {
@@ -1651,67 +1643,75 @@ async function downloadPreviewAsPng() {
   }
 }
 
-document.getElementById('btn-post').addEventListener('click', () => {
+document.getElementById('btn-post').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-post');
+  if (btn.disabled) return;
   const card = buildCardForSave('public');
-  persist('lms_published', card);
-  // Brief toast then redirect so the user sees their card appear at the top of the feed.
-  showToast('Posted to feed →');
-  setTimeout(() => { location.href = '/app/feed/'; }, 700);
+  btn.disabled = true;
+  try {
+    await window.lmsCards.saveCard(card, 'public');
+    // Brief toast then redirect so the user sees their card at the top of the feed.
+    showToast('Posted to feed →');
+    setTimeout(() => { location.href = '/app/feed/'; }, 700);
+  } catch (err) {
+    console.error('Post failed:', err);
+    showToast('Could not post — see console');
+    btn.disabled = false;
+  }
 });
-document.getElementById('btn-draft').addEventListener('click', () => {
+document.getElementById('btn-draft').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-draft');
+  if (btn.disabled) return;
   const card = buildCardForSave('draft');
-  persist('lms_drafts', card);
-  showToast('Saved as draft');
+  btn.disabled = true;
+  try {
+    await window.lmsCards.saveCard(card, 'draft');
+    showToast('Saved as draft');
+  } catch (err) {
+    console.error('Draft save failed:', err);
+    showToast('Could not save draft — see console');
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 /* ============================================================
  * INIT
  * ============================================================ */
 // Init is gated by auth — see /app/_auth.js.
-function initPage(user, userData) {
+async function initPage(user, userData) {
   // Re-read active stack now that we have the user's real stack data.
   activeStack = getActiveStack();
   renderStackPicker();
   renderQuestions();
   renderPreview();
   updateValidation();
-  // If URL has ?edit=<id>, prefill from saved card snapshot.
-  if (typeof applyEditAndRerender === 'function') applyEditAndRerender();
+  // If URL has ?edit=<id>, prefill from the card's Supabase row.
+  if (typeof applyEditAndRerender === 'function') await applyEditAndRerender();
 }
 window.lms.requireAuth(initPage);
 
 /* ============================================================
- * EDIT MODE — when URL has ?edit=<cardId>, look up the card in
- * lms_published or lms_drafts and pre-fill the form. On submit,
- * we replace the existing card in localStorage rather than
- * unshifting a new one.
+ * EDIT MODE — when URL has ?edit=<cardId>, load the card's row
+ * from Supabase and pre-fill the form. On submit, saveCard()
+ * upserts by id, so the existing row is updated in place.
  * ============================================================ */
-function loadCardForEdit(id) {
-  function read(key) {
-    try { return JSON.parse(localStorage.getItem(key) || '[]'); }
-    catch { return []; }
-  }
-  for (const c of read('lms_published')) {
-    if (c.id === id) return { card: c, source: 'lms_published' };
-  }
-  for (const c of read('lms_drafts')) {
-    if (c.id === id) return { card: c, source: 'lms_drafts' };
-  }
-  return null;
-}
-
 const editParam = new URLSearchParams(location.search).get('edit');
-let editContext = null; // { card, source }
+let editContext = null; // { card }
 
-function applyEditPrefill() {
+async function applyEditPrefill() {
   if (!editParam) return;
-  const found = loadCardForEdit(editParam);
-  if (!found) {
+  let card = null;
+  try {
+    card = await window.lmsCards.getCard(editParam);
+  } catch (err) {
+    console.error('Edit: load failed', err);
+  }
+  if (!card) {
     console.warn('Edit: card not found for id', editParam);
     return;
   }
-  editContext = found;
-  const card = found.card;
+  editContext = { card };
 
   // State pre-fill
   state.title = card.title || '';
@@ -1783,39 +1783,28 @@ function applyEditPrefill() {
   if (btnDraft) btnDraft.textContent = 'Save changes';
 }
 
-// Patch the submit-card path so editing updates in place.
+// Patch the submit-card path so editing updates the existing row in place.
+// saveCard() upserts by id, so reusing editContext.card.id is all it takes.
 const originalBuildCardForSave = buildCardForSave;
 buildCardForSave = function(visibility) {
   const card = originalBuildCardForSave(visibility);
   if (editContext) {
-    // Preserve identifying + history fields
     card.id = editContext.card.id;
-    card.author = editContext.card.author || 'you';
+    card.author = editContext.card.author || card.author;
     card.likes = editContext.card.likes || 0;
     card.comments = editContext.card.comments || 0;
-    card.setId = editContext.card.setId || card.setId;
-    card.publishedAt = editContext.card.publishedAt || card.publishedAt;
+    // Keep a real set id; a draft's 'DRAFT' placeholder gets a fresh one on publish.
+    if (editContext.card.setId && editContext.card.setId !== 'DRAFT') {
+      card.setId = editContext.card.setId;
+    }
   }
   return card;
 };
 
-const originalPersist = persist;
-persist = function(key, card) {
-  if (editContext) {
-    // Remove from old source first, then write to new key
-    const oldKey = editContext.source;
-    try {
-      const old = JSON.parse(localStorage.getItem(oldKey) || '[]').filter(c => c.id !== card.id);
-      localStorage.setItem(oldKey, JSON.stringify(old));
-    } catch {}
-  }
-  originalPersist(key, card);
-};
-
 // Edit prefill runs inside initPage() once auth completes (so the user's
 // real stack is available for compound augmentation).
-function applyEditAndRerender() {
-  applyEditPrefill();
+async function applyEditAndRerender() {
+  await applyEditPrefill();
   if (editContext) {
     renderStackPicker();
     renderQuestions();

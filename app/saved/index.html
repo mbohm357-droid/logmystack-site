@@ -9,15 +9,15 @@
 <meta name="theme-color" content="#0a0a0a">
 <meta name="robots" content="noindex, nofollow">
 <!--
-  Feed v0 — preview/mock build.
-  - Card data is mock, defined in MOCK_CARDS below.
-  - No auth gate yet; visible to anyone who knows the URL.
-  - Cards visually consistent with /app/'s design system.
+  Saved Cards — the cards the signed-in user has bookmarked.
+  - Cards load from Supabase via /app/_cards.js (window.lmsCards.getSavedCards).
+  - Auth-gated by /app/_auth.js. Like / save / comment persist per user.
 -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
 <script src="/app/_auth.js"></script>
+<script src="/app/_cards.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -635,24 +635,14 @@ const COMPOUND = {
   cerebrolysin:{ display: 'Cerebrolysin',  type: 'cognitive', move: 'Repair'   },
 };
 
-/* ============================================================
- * MOCK CARD DATA
- * 10 sample protocol cards. Replace with API later.
- * ============================================================ */
-const MOCK_CARDS = [];  // saved page only shows snapshots saved by the user
+const MOCK_CARDS = [];  // unused on this page; kept so derived* helpers stay valid
 
 /* ============================================================
- * USER-POSTED CARDS — pulled from localStorage('lms_published'),
- * which is what /app/create/ writes to on Post. Drafts live in
- * 'lms_drafts' and are intentionally NOT shown in the feed.
+ * SAVED CARDS — the cards the signed-in user has bookmarked,
+ * loaded from Supabase via window.lmsCards.getSavedCards().
+ * CARDS is populated in initPage() once auth completes.
  * ============================================================ */
-function loadSavedSnapshots() {
-  try {
-    const arr = JSON.parse(localStorage.getItem('lms_saved_cards') || '[]');
-    return arr.filter(c => c && c.title && Array.isArray(c.compounds));
-  } catch { return []; }
-}
-const USER_CARDS = loadSavedSnapshots();
+let CARDS = [];
 
 /* ============================================================
  * FILTER STATE
@@ -671,12 +661,12 @@ const state = {
 // in sync with whatever cards exist.
 function derivedTypes() {
   const types = new Set();
-  MOCK_CARDS.forEach(c => c.compounds.forEach(cc => types.add(COMPOUND[cc.slug]?.type)));
+  CARDS.forEach(c => c.compounds.forEach(cc => types.add(COMPOUND[cc.slug]?.type)));
   return [...types].filter(Boolean);
 }
 function derivedCompounds() {
   const slugs = new Set();
-  MOCK_CARDS.forEach(c => c.compounds.forEach(cc => slugs.add(cc.slug)));
+  CARDS.forEach(c => c.compounds.forEach(cc => slugs.add(cc.slug)));
   return [...slugs];
 }
 
@@ -741,9 +731,8 @@ function renderFilterChips() {
 }
 
 function filteredCards() {
-  // User-posted cards always appear at the head of the pool so a freshly
-  // posted card lands at the top of the feed when they redirect over.
-  const pool = [...USER_CARDS, ...MOCK_CARDS];
+  // CARDS holds the cards this user has bookmarked, newest save first.
+  const pool = CARDS;
   let out = pool.filter(card => {
     if (state.activeTypes.size > 0) {
       const cardTypes = new Set(card.compounds.map(c => COMPOUND[c.slug]?.type));
@@ -998,7 +987,7 @@ function renderTypeLine(compounds) {
 
 function renderCard(card) {
   const inProgress = card.weekProgress < card.weeks;
-  const tierClass = `tier-${card.tier}`;
+  const tierClass = `tier-${escapeHtml(card.tier)}`;
 
   return `
     <article>
@@ -1007,10 +996,10 @@ function renderCard(card) {
 
         <div class="card-header">
           <div class="card-titleblock">
-            <div class="card-title">${card.title}</div>
+            <div class="card-title">${escapeHtml(card.title)}</div>
             <div class="card-typeline">
               ${renderTypeLine(card.compounds)}
-              <span class="card-setid">· ${card.setId}</span>
+              <span class="card-setid">· ${escapeHtml(card.setId)}</span>
             </div>
           </div>
           <div class="cost-ring ${inProgress ? 'in-progress' : ''}">
@@ -1036,38 +1025,36 @@ function renderCard(card) {
               <div class="compound-row">
                 <div class="compound-name" style="color: ${TYPE_COLOR[meta.type]};">${meta.display}</div>
                 <div class="compound-move">${meta.move}</div>
-                <div class="compound-dose">${c.dose} · ${c.cadence}${weekTagText(c)}</div>
+                <div class="compound-dose">${escapeHtml(c.dose)} · ${escapeHtml(c.cadence)}${weekTagText(c)}</div>
               </div>
             `;
           }).join('')}
         </div>
 
-        <div class="flavor">${card.notes}</div>
+        <div class="flavor">${escapeHtml(card.notes)}</div>
 
         <div class="stats">
           ${card.stats.map(s => `
             <div class="stat">
-              <div class="stat-label">${s.label}</div>
-              <div class="stat-delta ${s.dir}">${s.delta}${s.unit ? '<span style="font-size: 9px; font-weight: 500; color: var(--muted-2); margin-left: 2px;">' + s.unit + '</span>' : ''}</div>
-              <div class="stat-meta">${s.pre} → ${s.post}</div>
+              <div class="stat-label">${escapeHtml(s.label)}</div>
+              <div class="stat-delta ${escapeHtml(s.dir)}">${escapeHtml(s.delta)}${s.unit ? '<span style="font-size: 9px; font-weight: 500; color: var(--muted-2); margin-left: 2px;">' + escapeHtml(s.unit) + '</span>' : ''}</div>
+              <div class="stat-meta">${escapeHtml(s.pre)} → ${escapeHtml(s.post)}</div>
             </div>
           `).join('')}
         </div>
 
         <div class="card-footer">
-          <span>${card.vendor}</span>
+          <span>${escapeHtml(card.vendor || '—')}</span>
           <span class="dot">·</span>
           <span class="${card.verified ? 'verified' : ''}">${card.verified ? 'lot verified ✓' : 'unverified'}</span>
-          <span class="dot">·</span>
-          <span>${card.logs} logs</span>
         </div>
       </div>
 
       <div class="card-meta">
         <div class="author">
-          <div class="avatar">${card.author.substring(0, 1).toUpperCase()}</div>
-          <span class="author-handle">@${card.author}</span>
-          <span class="author-time">· ${card.age}</span>
+          <div class="avatar">${escapeHtml((card.author || '?').substring(0, 1).toUpperCase())}</div>
+          <span class="author-handle">@${escapeHtml(card.author)}</span>
+          <span class="author-time">· ${escapeHtml(card.age)}</span>
         </div>
         <div class="actions">
           <button class="action ${card.liked ? 'is-liked' : ''}" data-action="like" data-id="${card.id}">
@@ -1108,31 +1095,37 @@ function renderFeed() {
   }
   grid.innerHTML = cards.map(renderCard).join('');
 
-  // Wire action buttons (like, comment, save persist, share).
+  // Wire action buttons — like / save / comment persist to Supabase.
   grid.querySelectorAll('.action').forEach(btn => {
     btn.addEventListener('click', async e => {
       e.preventDefault();
       const action = btn.dataset.action;
       const id = btn.dataset.id;
-      const card = [...USER_CARDS, ...MOCK_CARDS].find(c => c.id === id);
+      const card = CARDS.find(c => c.id === id);
       if (!card) return;
       if (action === 'like') {
-        card.liked = !card.liked;
-        btn.classList.toggle('is-liked', card.liked);
-        const svg = btn.querySelector('svg');
-        svg.setAttribute('fill', card.liked ? 'currentColor' : 'none');
-        card.likes += card.liked ? 1 : -1;
-        btn.querySelector('span').textContent = card.likes;
+        btn.disabled = true;
+        try {
+          const nowLiked = await window.lmsCards.toggleLike(id, card.liked);
+          card.liked = nowLiked;
+          card.likes = Math.max(0, (card.likes || 0) + (nowLiked ? 1 : -1));
+          btn.classList.toggle('is-liked', card.liked);
+          btn.querySelector('svg').setAttribute('fill', card.liked ? 'currentColor' : 'none');
+          btn.querySelector('span').textContent = card.likes;
+        } catch (err) {
+          console.error('like failed:', err);
+        } finally { btn.disabled = false; }
       } else if (action === 'save') {
-        const nowSaved = toggleSavedCard(card);
-        card.saved = nowSaved;
-        // On the saved page, unsaving should drop the card from the list.
-        // Easiest path: re-load and re-render from storage.
-        const fresh = JSON.parse(localStorage.getItem('lms_saved_cards') || '[]')
-                          .filter(c => c && c.title && Array.isArray(c.compounds));
-        USER_CARDS.length = 0;
-        fresh.forEach(c => USER_CARDS.push(c));
-        render();
+        btn.disabled = true;
+        try {
+          await window.lmsCards.toggleSave(id, card.saved);
+          // On the saved page, unsaving drops the card from the list.
+          CARDS = CARDS.filter(c => c.id !== id);
+          render();
+        } catch (err) {
+          console.error('save failed:', err);
+          btn.disabled = false;
+        }
       } else if (action === 'share') {
         const url = `${location.origin}/app/feed/?card=${id}`;
         navigator.clipboard?.writeText(url);
@@ -1143,7 +1136,7 @@ function renderFeed() {
       } else if (action === 'download') {
         await downloadCardAsPng(btn, card);
       } else if (action === 'comment') {
-        toggleCommentThread(card, btn);
+        await toggleCommentThread(card, btn);
       }
     });
   });
@@ -1151,37 +1144,12 @@ function renderFeed() {
 
 
 /* ============================================================
- * SAVED CARDS + COMMENTS (localStorage v0).
+ * COMMENTS — backed by Supabase (window.lmsCards), shared across users.
  * ============================================================ */
-function loadSavedCards() {
-  try { return JSON.parse(localStorage.getItem('lms_saved_cards') || '[]'); }
-  catch { return []; }
-}
-function saveSavedCards(arr) {
-  localStorage.setItem('lms_saved_cards', JSON.stringify(arr));
-}
-function toggleSavedCard(card) {
-  const arr = loadSavedCards();
-  const idx = arr.findIndex(c => c.id === card.id);
-  if (idx >= 0) { arr.splice(idx, 1); saveSavedCards(arr); return false; }
-  // Snapshot only safe-to-serialize fields.
-  const snapshot = JSON.parse(JSON.stringify(card));
-  snapshot.savedAt = new Date().toISOString();
-  arr.unshift(snapshot);
-  saveSavedCards(arr);
-  return true;
-}
-function syncSavedStateFromStorage(cards) {
-  const ids = new Set(loadSavedCards().map(c => c.id));
-  cards.forEach(c => { c.saved = ids.has(c.id); });
-}
-
-function loadComments(cardId) {
-  try { return JSON.parse(localStorage.getItem('lms_comments_' + cardId) || '[]'); }
-  catch { return []; }
-}
-function saveComments(cardId, arr) {
-  localStorage.setItem('lms_comments_' + cardId, JSON.stringify(arr));
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 function relativeTime(iso) {
   const then = new Date(iso).getTime();
@@ -1191,9 +1159,8 @@ function relativeTime(iso) {
   if (sec < 86400) return Math.floor(sec/3600) + 'h ago';
   return Math.floor(sec/86400) + 'd ago';
 }
-function renderCommentList(cardId) {
-  const comments = loadComments(cardId);
-  if (comments.length === 0) {
+function renderCommentList(comments) {
+  if (!comments || comments.length === 0) {
     return `<div class="comment-empty">No comments yet. Be the first.</div>`;
   }
   return comments.map(c => `
@@ -1211,33 +1178,56 @@ function renderCommentList(cardId) {
 }
 function renderCommentThreadInner(cardId) {
   return `
-    <div class="comment-list" id="comment-list-${cardId}">${renderCommentList(cardId)}</div>
+    <div class="comment-list" id="comment-list-${cardId}">
+      <div class="comment-empty">Loading…</div>
+    </div>
     <form class="comment-form" data-card-id="${cardId}">
       <input type="text" class="comment-input" placeholder="Add a comment…" maxlength="240" required>
       <button type="submit" class="comment-submit">Post</button>
     </form>
   `;
 }
-function toggleCommentThread(card, btn) {
+async function toggleCommentThread(card, btn) {
   const thread = document.getElementById('thread-' + card.id);
   if (!thread) return;
   if (!thread.dataset.rendered) {
     thread.innerHTML = renderCommentThreadInner(card.id);
     thread.dataset.rendered = 'true';
+    // Pull existing comments from Supabase.
+    try {
+      const comments = await window.lmsCards.getComments(card.id);
+      const listEl = document.getElementById('comment-list-' + card.id);
+      if (listEl) listEl.innerHTML = renderCommentList(comments);
+      card.comments = comments.length;
+      const countSpan = btn.querySelector('span');
+      if (countSpan) countSpan.textContent = card.comments;
+    } catch (err) {
+      console.error('load comments failed:', err);
+      const listEl = document.getElementById('comment-list-' + card.id);
+      if (listEl) listEl.innerHTML = `<div class="comment-empty">Couldn't load comments.</div>`;
+    }
     const form = thread.querySelector('.comment-form');
-    form.addEventListener('submit', ev => {
+    form.addEventListener('submit', async ev => {
       ev.preventDefault();
       const input = form.querySelector('.comment-input');
       const text = input.value.trim();
       if (!text) return;
-      const list = loadComments(card.id);
-      list.push({ author: (window.lms && window.lms.displayName()) || 'you', text, timestamp: new Date().toISOString() });
-      saveComments(card.id, list);
-      document.getElementById('comment-list-' + card.id).innerHTML = renderCommentList(card.id);
-      input.value = '';
-      card.comments = (card.comments || 0) + 1;
-      const countSpan = btn.querySelector('span');
-      if (countSpan) countSpan.textContent = card.comments;
+      const submitBtn = form.querySelector('.comment-submit');
+      submitBtn.disabled = true;
+      try {
+        await window.lmsCards.addComment(card.id, text);
+        const comments = await window.lmsCards.getComments(card.id);
+        const listEl = document.getElementById('comment-list-' + card.id);
+        if (listEl) listEl.innerHTML = renderCommentList(comments);
+        input.value = '';
+        card.comments = comments.length;
+        const countSpan = btn.querySelector('span');
+        if (countSpan) countSpan.textContent = card.comments;
+      } catch (err) {
+        console.error('post comment failed:', err);
+      } finally {
+        submitBtn.disabled = false;
+      }
     });
   }
   thread.classList.toggle('hidden');
@@ -1290,7 +1280,22 @@ function render() {
 state.sort = 'saved';
 
 // Initial render — gated by Supabase auth.
-function initPage(user, userData) {
+async function initPage(user, userData) {
+  const grid = document.getElementById('feed-grid');
+  if (grid) grid.innerHTML = `<div class="empty-state"><div class="text-sm">Loading your saved cards…</div></div>`;
+  try {
+    CARDS = await window.lmsCards.getSavedCards();
+  } catch (err) {
+    console.error('Saved cards load failed:', err);
+    if (grid) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-title">Couldn't load your saved cards.</div>
+          <div class="text-sm">Check your connection and refresh the page.</div>
+        </div>`;
+    }
+    return;
+  }
   render();
 }
 window.lms.requireAuth(initPage);

@@ -9,15 +9,16 @@
 <meta name="theme-color" content="#0a0a0a">
 <meta name="robots" content="noindex, nofollow">
 <!--
-  Feed v0 — preview/mock build.
-  - Card data is mock, defined in MOCK_CARDS below.
-  - No auth gate yet; visible to anyone who knows the URL.
+  Feed — cross-user protocol card stream.
+  - Cards load from Supabase via /app/_cards.js (window.lmsCards.getFeed).
+  - Auth-gated by /app/_auth.js; likes / saves / comments persist per user.
   - Cards visually consistent with /app/'s design system.
 -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
 <script src="/app/_auth.js"></script>
+<script src="/app/_cards.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -650,251 +651,11 @@ const COMPOUND = {
 };
 
 /* ============================================================
- * MOCK CARD DATA
- * 10 sample protocol cards. Replace with API later.
+ * CARD DATA — cross-user, loaded from Supabase via window.lmsCards.
+ * CARDS is populated in initPage() once auth completes, so every
+ * signed-in user sees every other user's published cards.
  * ============================================================ */
-const MOCK_CARDS = [
-  {
-    id: 'card-001', setId: 'RR-001', tier: 'common',
-    title: 'Recomp + Recovery',
-    weeks: 12, weekProgress: 12,
-    compounds: [
-      { slug: 'cjc1295',    dose: '1 mg', cadence: '2× weekly' },
-      { slug: 'ipamorelin', dose: '200 mcg', cadence: '5× weekly' },
-      { slug: 'bpc157',     dose: '250 mcg', cadence: '2× daily', startedWeek: 5 },
-    ],
-    notes: 'Shoulder injury from grappling about 80% resolved by week 8 — most surprising delta.',
-    stats: [
-      { label: 'Lean mass', delta: '+6.2',  unit: 'lbs', pre: '172.4', post: '178.6', dir: 'pos' },
-      { label: 'Body fat',  delta: '-3.1',  unit: 'lbs', pre: '32.0',  post: '28.9',  dir: 'neg-good' },
-      { label: 'Sleep',     delta: '+12%',  unit: '',    pre: '6.4h',  post: '7.2h',  dir: 'pos' },
-      { label: 'Recovery',  delta: '+18%',  unit: '',    pre: '62',    post: '73',    dir: 'pos' },,
-      { label: 'Joint',     delta: '+4',    unit: '/10', pre: '4',     post: '8',     dir: 'pos' },
-      { label: 'Sleep hrs', delta: '+0.8',  unit: 'hr',  pre: '6.4',   post: '7.2',   dir: 'pos' },
-      { label: 'Workouts',  delta: '+2',    unit: '/wk', pre: '3',     post: '5',     dir: 'pos' },
-      { label: 'Weight',    delta: '+3.1',  unit: 'lbs', pre: '172.4', post: '175.5', dir: 'pos' }
-    ],
-    vendor: 'PrimeRaws', verified: true, logs: 84,
-    author: 'atlas_rx', age: '3d',
-    likes: 142, comments: 24, saved: false,
-  },
-  {
-    id: 'card-002', setId: 'IJ-003', tier: 'common',
-    title: 'Rotator Cuff Recovery',
-    weeks: 8, weekProgress: 8,
-    compounds: [
-      { slug: 'bpc157', dose: '500 mcg', cadence: '2× daily' },
-      { slug: 'tb500',  dose: '5 mg',    cadence: '1× weekly' },
-    ],
-    notes: 'Back to lifting heavy by week 6. Wouldn\'t have believed it. Sleep on the affected side again.',
-    stats: [
-      { label: 'Pain',  delta: '-5',   unit: '/10', pre: '7',     post: '2',     dir: 'neg-good' },
-      { label: 'ROM',   delta: '+30°', unit: '',    pre: '95°',   post: '125°',  dir: 'pos' },
-      { label: 'Grip',  delta: '+17',  unit: 'kg',  pre: '95',    post: '112',   dir: 'pos' },
-      { label: 'Sleep', delta: '+1.6h',unit: '',    pre: '5.8h',  post: '7.4h',  dir: 'pos' },,
-      { label: 'Healing',   delta: '+6',    unit: '/10', pre: '3',     post: '9',     dir: 'pos' },
-      { label: 'Recovery',  delta: '+5',    unit: '/10', pre: '4',     post: '9',     dir: 'pos' },
-      { label: 'Mood',      delta: '+2',    unit: '/10', pre: '7',     post: '9',     dir: 'pos' },
-      { label: 'Workouts',  delta: '+3',    unit: '/wk', pre: '1',     post: '4',     dir: 'pos' }
-    ],
-    vendor: 'PeptideSciences', verified: true, logs: 52,
-    author: 'climber_42', age: '5d',
-    likes: 218, comments: 41, saved: true,
-  },
-  {
-    id: 'card-003', setId: 'CG-002', tier: 'common',
-    title: 'Deep Work Stack',
-    weeks: 6, weekProgress: 6,
-    compounds: [
-      { slug: 'semax',  dose: '600 mcg', cadence: 'daily AM' },
-      { slug: 'selank', dose: '300 mcg', cadence: 'daily PM' },
-    ],
-    notes: 'Skeptical going in. By week 3 i wasn\'t. Deep focus blocks now feel achievable instead of aspirational.',
-    stats: [
-      { label: 'Deep work', delta: '+2.7h', unit: '', pre: '2.1h', post: '4.8h', dir: 'pos' },
-      { label: 'Focus',     delta: '+2.5',  unit: '/10', pre: '6.0', post: '8.5', dir: 'pos' },
-      { label: 'HRV',       delta: '+9',    unit: '',  pre: '42',   post: '51',  dir: 'pos' },
-      { label: 'Mood',      delta: '+1.5',  unit: '/10', pre: '6.5', post: '8.0', dir: 'pos' },,
-      { label: 'Memory',    delta: '+3',    unit: '/10', pre: '5',     post: '8',     dir: 'pos' },
-      { label: 'Stress',    delta: '+3',    unit: '/10', pre: '5',     post: '8',     dir: 'pos' },
-      { label: 'Sleep qual',delta: '+2',    unit: '/10', pre: '6',     post: '8',     dir: 'pos' },
-      { label: 'Sleep hrs', delta: '+0.5',  unit: 'hr',  pre: '7.0',   post: '7.5',   dir: 'pos' }
-    ],
-    vendor: 'SwissChems', verified: true, logs: 38,
-    author: 'ship_or_die', age: '1w',
-    likes: 96, comments: 18, saved: false,
-  },
-  {
-    id: 'card-004', setId: 'BR-005', tier: 'advanced',
-    title: 'Visceral Cut',
-    weeks: 16, weekProgress: 16,
-    compounds: [
-      { slug: 'tesamorelin', dose: '2 mg',    cadence: 'daily' },
-      { slug: 'ipamorelin',  dose: '200 mcg', cadence: '3× weekly', stoppedWeek: 12 },
-    ],
-    notes: 'Abs visible by week 12. The visceral fat number is the headline — labs confirmed the mirror.',
-    stats: [
-      { label: 'Visceral', delta: '-22%', unit: '', pre: '142',  post: '111',  dir: 'neg-good' },
-      { label: 'Waist',    delta: '-2.4', unit: 'in', pre: '36.1', post: '33.7', dir: 'neg-good' },
-      { label: 'Lean',     delta: '+4.1', unit: 'lbs',pre: '168',  post: '172',  dir: 'pos' },
-      { label: 'VO2',      delta: '+6%',  unit: '',  pre: '44',   post: '47',   dir: 'pos' },,
-      { label: 'Weight',    delta: '-8',    unit: 'lbs', pre: '192',   post: '184',   dir: 'neg-good' },
-      { label: 'Sleep qual',delta: '+2',    unit: '/10', pre: '6',     post: '8',     dir: 'pos' },
-      { label: 'Energy',    delta: '+3',    unit: '/10', pre: '5',     post: '8',     dir: 'pos' },
-      { label: 'Workouts',  delta: '+1',    unit: '/wk', pre: '3',     post: '4',     dir: 'pos' }
-    ],
-    vendor: 'Helix', verified: true, logs: 128,
-    author: 'lift_long', age: '2w',
-    likes: 312, comments: 58, saved: false,
-  },
-  {
-    id: 'card-005', setId: 'GM-007', tier: 'common',
-    title: 'Sema Slow Ramp',
-    weeks: 16, weekProgress: 9,
-    compounds: [
-      { slug: 'semaglutide', dose: '1.0 mg', cadence: 'weekly' },
-    ],
-    notes: 'Ramped slow (0.25 → 0.5 → 1.0). Zero nausea after week 3. Lifting weights 3× to preserve muscle.',
-    stats: [
-      { label: 'Weight', delta: '-18.6', unit: 'lbs', pre: '241',  post: '222',  dir: 'neg-good' },
-      { label: 'Waist',  delta: '-3.1',  unit: 'in',  pre: '42.0', post: '38.9', dir: 'neg-good' },
-      { label: 'FBG',    delta: '-14',   unit: '',    pre: '102',  post: '88',   dir: 'neg-good' },
-      { label: 'Energy', delta: '+1.5',  unit: '/10', pre: '6.0',  post: '7.5',  dir: 'pos' },,
-      { label: 'Appetite',  delta: '+5',    unit: '/10', pre: '2',     post: '7',     dir: 'pos' },
-      { label: 'Cravings',  delta: '+6',    unit: '/10', pre: '2',     post: '8',     dir: 'pos' },
-      { label: 'Mood',      delta: '+2',    unit: '/10', pre: '6',     post: '8',     dir: 'pos' },
-      { label: 'Sleep qual',delta: '+1',    unit: '/10', pre: '6',     post: '7',     dir: 'pos' }
-    ],
-    vendor: 'PureRaws', verified: true, logs: 47,
-    author: 'new_baseline', age: '4d',
-    likes: 187, comments: 32, saved: false,
-  },
-  {
-    id: 'card-006', setId: 'SR-001', tier: 'common',
-    title: 'Skin + Hair Reset',
-    weeks: 12, weekProgress: 9,
-    compounds: [
-      { slug: 'ghkcu', dose: '2 mg', cadence: 'daily' },
-    ],
-    notes: 'Wife noticed before i did. Ordering another vial. Pillow-line marks fade faster in the morning.',
-    stats: [
-      { label: 'Elastic',  delta: '+18%', unit: '', pre: '0.62', post: '0.73', dir: 'pos' },
-      { label: 'Hair',     delta: '+11%', unit: '', pre: '184',  post: '204',  dir: 'pos' },
-      { label: 'Wrinkles', delta: '-15%', unit: '', pre: '24',   post: '20',   dir: 'neg-good' },
-      { label: 'Sleep',    delta: '+0.5h',unit: '', pre: '7.1h', post: '7.6h', dir: 'pos' },,
-      { label: 'Skin',      delta: '+3',    unit: '/10', pre: '5',     post: '8',     dir: 'pos' },
-      { label: 'Mood',      delta: '+1',    unit: '/10', pre: '7',     post: '8',     dir: 'pos' },
-      { label: 'Healing',   delta: '+3',    unit: '/10', pre: '5',     post: '8',     dir: 'pos' },
-      { label: 'Sleep qual',delta: '+1',    unit: '/10', pre: '7',     post: '8',     dir: 'pos' }
-    ],
-    vendor: 'PurePeptides', verified: true, logs: 21,
-    author: 'no_filter', age: '6d',
-    likes: 73, comments: 11, saved: true,
-  },
-  {
-    id: 'card-007', setId: 'GM-014', tier: 'elite',
-    title: 'Tirz Recomp',
-    weeks: 24, weekProgress: 24,
-    compounds: [
-      { slug: 'tirzepatide', dose: '7.5 mg', cadence: 'weekly' },
-    ],
-    notes: 'The most important number is A1C, not the scale. Titrated up to 7.5 mg by week 12. Bloodwork confirms metabolic flexibility return.',
-    stats: [
-      { label: 'Weight', delta: '-34',  unit: 'lbs', pre: '268', post: '234', dir: 'neg-good' },
-      { label: 'Waist',  delta: '-5.2', unit: 'in',  pre: '44.0',post: '38.8',dir: 'neg-good' },
-      { label: 'A1C',    delta: '-0.6', unit: '',    pre: '5.9', post: '5.3', dir: 'neg-good' },
-      { label: 'VO2',    delta: '+12%', unit: '',    pre: '38',  post: '43',  dir: 'pos' },,
-      { label: 'Appetite',  delta: '+6',    unit: '/10', pre: '2',     post: '8',     dir: 'pos' },
-      { label: 'Cravings',  delta: '+7',    unit: '/10', pre: '2',     post: '9',     dir: 'pos' },
-      { label: 'Body comp', delta: '+5',    unit: '/10', pre: '3',     post: '8',     dir: 'pos' },
-      { label: 'Energy',    delta: '+3',    unit: '/10', pre: '5',     post: '8',     dir: 'pos' }
-    ],
-    vendor: 'AminoAsylum', verified: true, logs: 196,
-    author: 'recomp_lab', age: '1d',
-    likes: 524, comments: 87, saved: false,
-  },
-  {
-    id: 'card-008', setId: 'PB-002', tier: 'advanced',
-    title: 'Performance Build',
-    weeks: 8, weekProgress: 8,
-    compounds: [
-      { slug: 'igf1lr3', dose: '50 mcg', cadence: 'daily', stoppedWeek: 6 },
-      { slug: 'cjc1295', dose: '1 mg',   cadence: '2× weekly' },
-    ],
-    notes: 'Appetite was a beast. Ate 4k+ cal daily. Results justified the food bill. Joint stiffness mid-cycle — backed off dose, resolved.',
-    stats: [
-      { label: 'Squat',  delta: '+60',  unit: 'lbs', pre: '315', post: '375', dir: 'pos' },
-      { label: 'Bench',  delta: '+30',  unit: 'lbs', pre: '245', post: '275', dir: 'pos' },
-      { label: 'Lean',   delta: '+5.3', unit: 'lbs', pre: '185', post: '190', dir: 'pos' },
-      { label: 'Recov',  delta: '+1.6', unit: '/10', pre: '6.2', post: '7.8', dir: 'pos' },,
-      { label: 'Strength',  delta: '+3',    unit: '/10', pre: '6',     post: '9',     dir: 'pos' },
-      { label: 'Deadlift',  delta: '+75',   unit: 'lbs', pre: '425',   post: '500',   dir: 'pos' },
-      { label: 'Sleep qual',delta: '+2',    unit: '/10', pre: '6',     post: '8',     dir: 'pos' },
-      { label: 'Workouts',  delta: '+1',    unit: '/wk', pre: '4',     post: '5',     dir: 'pos' }
-    ],
-    vendor: 'Geopeptides', verified: false, logs: 64,
-    author: 'bar_path', age: '2w',
-    likes: 271, comments: 49, saved: false,
-  },
-  {
-    id: 'card-009', setId: 'CG-009', tier: 'common',
-    title: 'Anxiety + Sleep',
-    weeks: 6, weekProgress: 4,
-    compounds: [
-      { slug: 'selank', dose: '500 mcg', cadence: 'daily AM' },
-    ],
-    notes: 'Stopped reaching for the kratom by week 2. That\'s the win for me. Sleep onset cut from 45 min to under 15.',
-    stats: [
-      { label: 'Anxiety',   delta: '-4',   unit: '/10',  pre: '7',     post: '3',     dir: 'neg-good' },
-      { label: 'Mood',      delta: '+3',   unit: '/10',  pre: '5',     post: '8',     dir: 'pos' },
-      { label: 'HRV',       delta: '+14',  unit: '',     pre: '38',    post: '52',    dir: 'pos' },
-      { label: 'Sleep lat', delta: '-33m', unit: '',     pre: '45m',   post: '12m',   dir: 'neg-good' },,
-      { label: 'Stress',    delta: '+4',    unit: '/10', pre: '4',     post: '8',     dir: 'pos' },
-      { label: 'Sleep qual',delta: '+3',    unit: '/10', pre: '5',     post: '8',     dir: 'pos' },
-      { label: 'Sleep hrs', delta: '+1.2',  unit: 'hr',  pre: '6.0',   post: '7.2',   dir: 'pos' },
-      { label: 'Focus',     delta: '+2',    unit: '/10', pre: '6',     post: '8',     dir: 'pos' }
-    ],
-    vendor: 'SwissChems', verified: true, logs: 19,
-    author: 'low_resting', age: '3d',
-    likes: 64, comments: 9, saved: false,
-  },
-  {
-    id: 'card-010', setId: 'MM-001', tier: 'common',
-    title: 'Mitochondrial Reset',
-    weeks: 10, weekProgress: 10,
-    compounds: [
-      { slug: 'motsc', dose: '10 mg', cadence: '3× weekly' },
-    ],
-    notes: 'Post-COVID fatigue protocol. Felt the shift around week 4. Not a cure-all but real — back to morning runs.',
-    stats: [
-      { label: 'VO2',    delta: '+14%', unit: '',    pre: '41',  post: '47',  dir: 'pos' },
-      { label: 'Energy', delta: '+3',   unit: '/10', pre: '5',   post: '8',   dir: 'pos' },
-      { label: 'FBG',    delta: '-13',  unit: '',    pre: '95',  post: '82',  dir: 'neg-good' },
-      { label: 'Recov',  delta: '+20%', unit: '',    pre: '58',  post: '70',  dir: 'pos' },,
-      { label: 'Workouts',  delta: '+2',    unit: '/wk', pre: '2',     post: '4',     dir: 'pos' },
-      { label: 'Mood',      delta: '+2',    unit: '/10', pre: '6',     post: '8',     dir: 'pos' },
-      { label: 'Mental clr',delta: '+3',    unit: '/10', pre: '5',     post: '8',     dir: 'pos' },
-      { label: 'Sleep qual',delta: '+2',    unit: '/10', pre: '6',     post: '8',     dir: 'pos' }
-    ],
-    vendor: 'Pharmagrade', verified: true, logs: 36,
-    author: 'energy_audit', age: '1w',
-    likes: 158, comments: 27, saved: false,
-  },
-];
-
-/* ============================================================
- * USER-POSTED CARDS — pulled from localStorage('lms_published'),
- * which is what /app/create/ writes to on Post. Drafts live in
- * 'lms_drafts' and are intentionally NOT shown in the feed.
- * ============================================================ */
-function loadUserCards() {
-  try {
-    const arr = JSON.parse(localStorage.getItem('lms_published') || '[]');
-    // Ensure required shape (older drafts might be missing fields).
-    return arr.filter(c => c && c.title && Array.isArray(c.compounds));
-  } catch { return []; }
-}
-const USER_CARDS = loadUserCards();
+let CARDS = [];
 
 /* ============================================================
  * FILTER STATE
@@ -913,12 +674,12 @@ const state = {
 // in sync with whatever cards exist.
 function derivedTypes() {
   const types = new Set();
-  MOCK_CARDS.forEach(c => c.compounds.forEach(cc => types.add(COMPOUND[cc.slug]?.type)));
+  CARDS.forEach(c => c.compounds.forEach(cc => types.add(COMPOUND[cc.slug]?.type)));
   return [...types].filter(Boolean);
 }
 function derivedCompounds() {
   const slugs = new Set();
-  MOCK_CARDS.forEach(c => c.compounds.forEach(cc => slugs.add(cc.slug)));
+  CARDS.forEach(c => c.compounds.forEach(cc => slugs.add(cc.slug)));
   return [...slugs];
 }
 
@@ -983,9 +744,8 @@ function renderFilterChips() {
 }
 
 function filteredCards() {
-  // User-posted cards always appear at the head of the pool so a freshly
-  // posted card lands at the top of the feed when they redirect over.
-  const pool = [...USER_CARDS, ...MOCK_CARDS];
+  // CARDS holds every public card pulled from Supabase, newest first.
+  const pool = CARDS;
   let out = pool.filter(card => {
     if (state.activeTypes.size > 0) {
       const cardTypes = new Set(card.compounds.map(c => COMPOUND[c.slug]?.type));
@@ -1240,7 +1000,7 @@ function renderTypeLine(compounds) {
 
 function renderCard(card) {
   const inProgress = card.weekProgress < card.weeks;
-  const tierClass = `tier-${card.tier}`;
+  const tierClass = `tier-${escapeHtml(card.tier)}`;
 
   return `
     <article>
@@ -1249,10 +1009,10 @@ function renderCard(card) {
 
         <div class="card-header">
           <div class="card-titleblock">
-            <div class="card-title">${card.title}</div>
+            <div class="card-title">${escapeHtml(card.title)}</div>
             <div class="card-typeline">
               ${renderTypeLine(card.compounds)}
-              <span class="card-setid">· ${card.setId}</span>
+              <span class="card-setid">· ${escapeHtml(card.setId)}</span>
             </div>
           </div>
           <div class="cost-ring ${inProgress ? 'in-progress' : ''}">
@@ -1278,38 +1038,36 @@ function renderCard(card) {
               <div class="compound-row">
                 <div class="compound-name" style="color: ${TYPE_COLOR[meta.type]};">${meta.display}</div>
                 <div class="compound-move">${meta.move}</div>
-                <div class="compound-dose">${c.dose} · ${c.cadence}${weekTagText(c)}</div>
+                <div class="compound-dose">${escapeHtml(c.dose)} · ${escapeHtml(c.cadence)}${weekTagText(c)}</div>
               </div>
             `;
           }).join('')}
         </div>
 
-        <div class="flavor">${card.notes}</div>
+        <div class="flavor">${escapeHtml(card.notes)}</div>
 
         <div class="stats">
           ${card.stats.map(s => `
             <div class="stat">
-              <div class="stat-label">${s.label}</div>
-              <div class="stat-delta ${s.dir}">${s.delta}${s.unit ? '<span style="font-size: 9px; font-weight: 500; color: var(--muted-2); margin-left: 2px;">' + s.unit + '</span>' : ''}</div>
-              <div class="stat-meta">${s.pre} → ${s.post}</div>
+              <div class="stat-label">${escapeHtml(s.label)}</div>
+              <div class="stat-delta ${escapeHtml(s.dir)}">${escapeHtml(s.delta)}${s.unit ? '<span style="font-size: 9px; font-weight: 500; color: var(--muted-2); margin-left: 2px;">' + escapeHtml(s.unit) + '</span>' : ''}</div>
+              <div class="stat-meta">${escapeHtml(s.pre)} → ${escapeHtml(s.post)}</div>
             </div>
           `).join('')}
         </div>
 
         <div class="card-footer">
-          <span>${card.vendor}</span>
+          <span>${escapeHtml(card.vendor || '—')}</span>
           <span class="dot">·</span>
           <span class="${card.verified ? 'verified' : ''}">${card.verified ? 'lot verified ✓' : 'unverified'}</span>
-          <span class="dot">·</span>
-          <span>${card.logs} logs</span>
         </div>
       </div>
 
       <div class="card-meta">
         <div class="author">
-          <div class="avatar">${card.author.substring(0, 1).toUpperCase()}</div>
-          <span class="author-handle">@${card.author}</span>
-          <span class="author-time">· ${card.age}</span>
+          <div class="avatar">${escapeHtml((card.author || '?').substring(0, 1).toUpperCase())}</div>
+          <span class="author-handle">@${escapeHtml(card.author)}</span>
+          <span class="author-time">· ${escapeHtml(card.age)}</span>
         </div>
         <div class="actions">
           <button class="action ${card.liked ? 'is-liked' : ''}" data-action="like" data-id="${card.id}">
@@ -1340,7 +1098,14 @@ function renderFeed() {
   const cards = filteredCards();
   const grid = document.getElementById('feed-grid');
   if (cards.length === 0) {
-    grid.innerHTML = `
+    grid.innerHTML = (CARDS.length === 0)
+      ? `
+      <div class="empty-state">
+        <div class="empty-state-title">No protocol cards yet.</div>
+        <div class="text-sm">Be the first — <a href="/app/create/" style="color: var(--accent);">share a protocol card</a>.</div>
+      </div>
+    `
+      : `
       <div class="empty-state">
         <div class="empty-state-title">No protocols match those filters.</div>
         <div class="text-sm">Try removing a chip or two.</div>
@@ -1350,32 +1115,40 @@ function renderFeed() {
   }
   grid.innerHTML = cards.map(renderCard).join('');
 
-  // Wire action buttons (like, comment, save persist, share).
+  // Wire action buttons (like, comment, save, share) — like/save/comment
+  // persist to Supabase so they're shared across every user.
   grid.querySelectorAll('.action').forEach(btn => {
     btn.addEventListener('click', async e => {
       e.preventDefault();
       const action = btn.dataset.action;
       const id = btn.dataset.id;
-      const card = [...USER_CARDS, ...MOCK_CARDS].find(c => c.id === id);
+      const card = CARDS.find(c => c.id === id);
       if (!card) return;
       if (action === 'like') {
-        card.liked = !card.liked;
-        btn.classList.toggle('is-liked', card.liked);
-        const svg = btn.querySelector('svg');
-        svg.setAttribute('fill', card.liked ? 'currentColor' : 'none');
-        card.likes += card.liked ? 1 : -1;
-        btn.querySelector('span').textContent = card.likes;
+        btn.disabled = true;
+        try {
+          const nowLiked = await window.lmsCards.toggleLike(id, card.liked);
+          card.liked = nowLiked;
+          card.likes = Math.max(0, (card.likes || 0) + (nowLiked ? 1 : -1));
+          btn.classList.toggle('is-liked', card.liked);
+          btn.querySelector('svg').setAttribute('fill', card.liked ? 'currentColor' : 'none');
+          btn.querySelector('span').textContent = card.likes;
+        } catch (err) {
+          console.error('like failed:', err);
+        } finally { btn.disabled = false; }
       } else if (action === 'save') {
-        const nowSaved = toggleSavedCard(card);
-        card.saved = nowSaved;
-        btn.classList.toggle('is-saved', card.saved);
-        const svg = btn.querySelector('svg');
-        svg.setAttribute('fill', card.saved ? 'currentColor' : 'none');
-        // Brief toast-style label
-        const orig = btn.innerHTML;
-        const label = card.saved ? 'saved' : 'removed';
-        btn.innerHTML = orig + `<span style="font-size: 10px;">${label}</span>`;
-        setTimeout(() => { btn.innerHTML = orig; }, 900);
+        btn.disabled = true;
+        try {
+          const nowSaved = await window.lmsCards.toggleSave(id, card.saved);
+          card.saved = nowSaved;
+          btn.classList.toggle('is-saved', card.saved);
+          btn.querySelector('svg').setAttribute('fill', card.saved ? 'currentColor' : 'none');
+          const orig = btn.innerHTML;
+          btn.innerHTML = orig + `<span style="font-size: 10px;">${card.saved ? 'saved' : 'removed'}</span>`;
+          setTimeout(() => { btn.innerHTML = orig; }, 900);
+        } catch (err) {
+          console.error('save failed:', err);
+        } finally { btn.disabled = false; }
       } else if (action === 'share') {
         const url = `${location.origin}/app/feed/?card=${id}`;
         navigator.clipboard?.writeText(url);
@@ -1386,7 +1159,7 @@ function renderFeed() {
       } else if (action === 'download') {
         await downloadCardAsPng(btn, card);
       } else if (action === 'comment') {
-        toggleCommentThread(card, btn);
+        await toggleCommentThread(card, btn);
       }
     });
   });
@@ -1394,38 +1167,8 @@ function renderFeed() {
 
 
 /* ============================================================
- * SAVED CARDS + COMMENTS (localStorage v0).
+ * COMMENTS — backed by Supabase (window.lmsCards), shared across users.
  * ============================================================ */
-function loadSavedCards() {
-  try { return JSON.parse(localStorage.getItem('lms_saved_cards') || '[]'); }
-  catch { return []; }
-}
-function saveSavedCards(arr) {
-  localStorage.setItem('lms_saved_cards', JSON.stringify(arr));
-}
-function toggleSavedCard(card) {
-  const arr = loadSavedCards();
-  const idx = arr.findIndex(c => c.id === card.id);
-  if (idx >= 0) { arr.splice(idx, 1); saveSavedCards(arr); return false; }
-  // Snapshot only safe-to-serialize fields.
-  const snapshot = JSON.parse(JSON.stringify(card));
-  snapshot.savedAt = new Date().toISOString();
-  arr.unshift(snapshot);
-  saveSavedCards(arr);
-  return true;
-}
-function syncSavedStateFromStorage(cards) {
-  const ids = new Set(loadSavedCards().map(c => c.id));
-  cards.forEach(c => { c.saved = ids.has(c.id); });
-}
-
-function loadComments(cardId) {
-  try { return JSON.parse(localStorage.getItem('lms_comments_' + cardId) || '[]'); }
-  catch { return []; }
-}
-function saveComments(cardId, arr) {
-  localStorage.setItem('lms_comments_' + cardId, JSON.stringify(arr));
-}
 function relativeTime(iso) {
   const then = new Date(iso).getTime();
   const sec = Math.floor((Date.now() - then) / 1000);
@@ -1434,9 +1177,13 @@ function relativeTime(iso) {
   if (sec < 86400) return Math.floor(sec/3600) + 'h ago';
   return Math.floor(sec/86400) + 'd ago';
 }
-function renderCommentList(cardId) {
-  const comments = loadComments(cardId);
-  if (comments.length === 0) {
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function renderCommentList(comments) {
+  if (!comments || comments.length === 0) {
     return `<div class="comment-empty">No comments yet. Be the first.</div>`;
   }
   return comments.map(c => `
@@ -1454,33 +1201,56 @@ function renderCommentList(cardId) {
 }
 function renderCommentThreadInner(cardId) {
   return `
-    <div class="comment-list" id="comment-list-${cardId}">${renderCommentList(cardId)}</div>
+    <div class="comment-list" id="comment-list-${cardId}">
+      <div class="comment-empty">Loading…</div>
+    </div>
     <form class="comment-form" data-card-id="${cardId}">
       <input type="text" class="comment-input" placeholder="Add a comment…" maxlength="240" required>
       <button type="submit" class="comment-submit">Post</button>
     </form>
   `;
 }
-function toggleCommentThread(card, btn) {
+async function toggleCommentThread(card, btn) {
   const thread = document.getElementById('thread-' + card.id);
   if (!thread) return;
   if (!thread.dataset.rendered) {
     thread.innerHTML = renderCommentThreadInner(card.id);
     thread.dataset.rendered = 'true';
+    // Pull existing comments from Supabase.
+    try {
+      const comments = await window.lmsCards.getComments(card.id);
+      const listEl = document.getElementById('comment-list-' + card.id);
+      if (listEl) listEl.innerHTML = renderCommentList(comments);
+      card.comments = comments.length;
+      const countSpan = btn.querySelector('span');
+      if (countSpan) countSpan.textContent = card.comments;
+    } catch (err) {
+      console.error('load comments failed:', err);
+      const listEl = document.getElementById('comment-list-' + card.id);
+      if (listEl) listEl.innerHTML = `<div class="comment-empty">Couldn't load comments.</div>`;
+    }
     const form = thread.querySelector('.comment-form');
-    form.addEventListener('submit', ev => {
+    form.addEventListener('submit', async ev => {
       ev.preventDefault();
       const input = form.querySelector('.comment-input');
       const text = input.value.trim();
       if (!text) return;
-      const list = loadComments(card.id);
-      list.push({ author: (window.lms && window.lms.displayName()) || 'you', text, timestamp: new Date().toISOString() });
-      saveComments(card.id, list);
-      document.getElementById('comment-list-' + card.id).innerHTML = renderCommentList(card.id);
-      input.value = '';
-      card.comments = (card.comments || 0) + 1;
-      const countSpan = btn.querySelector('span');
-      if (countSpan) countSpan.textContent = card.comments;
+      const submitBtn = form.querySelector('.comment-submit');
+      submitBtn.disabled = true;
+      try {
+        await window.lmsCards.addComment(card.id, text);
+        const comments = await window.lmsCards.getComments(card.id);
+        const listEl = document.getElementById('comment-list-' + card.id);
+        if (listEl) listEl.innerHTML = renderCommentList(comments);
+        input.value = '';
+        card.comments = comments.length;
+        const countSpan = btn.querySelector('span');
+        if (countSpan) countSpan.textContent = card.comments;
+      } catch (err) {
+        console.error('post comment failed:', err);
+      } finally {
+        submitBtn.disabled = false;
+      }
     });
   }
   thread.classList.toggle('hidden');
@@ -1545,9 +1315,23 @@ document.getElementById('sort-top').addEventListener('click', () => {
 });
 
 // Initial render — gated by Supabase auth.
-function initPage(user, userData) {
-  if (typeof syncSavedStateFromStorage === 'function') {
-    syncSavedStateFromStorage([...USER_CARDS, ...MOCK_CARDS]);
+async function initPage(user, userData) {
+  const grid = document.getElementById('feed-grid');
+  if (grid) {
+    grid.innerHTML = `<div class="empty-state"><div class="text-sm">Loading the feed…</div></div>`;
+  }
+  try {
+    CARDS = await window.lmsCards.getFeed();
+  } catch (err) {
+    console.error('Feed load failed:', err);
+    if (grid) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-title">Couldn't load the feed.</div>
+          <div class="text-sm">Check your connection and refresh the page.</div>
+        </div>`;
+    }
+    return;
   }
   render();
 }
