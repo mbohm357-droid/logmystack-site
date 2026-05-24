@@ -527,6 +527,274 @@
     font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted-2);
   }
   .mp-overlay-swatch { width: 14px; height: 2px; border-radius: 2px; }
+
+  /* ============================================================
+     TODAY PAGE — redesigned dashboard
+     ============================================================ */
+  .today-hero {
+    border-radius: 20px;
+    padding: 34px 38px;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 0;
+    background:
+      radial-gradient(120% 140% at 88% 10%, rgba(52,211,153,0.07), transparent 60%),
+      var(--panel);
+    margin-bottom: 22px;
+  }
+  .hero-left { min-width: 0; padding-right: 36px; }
+  .hero-right {
+    border-left: 1px solid var(--border);
+    padding-left: 36px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 18px;
+  }
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.18em;
+    color: var(--muted-2);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .hero-eyebrow .dot {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 8px rgba(52,211,153,0.7);
+  }
+  .hero-greeting {
+    font-size: 52px; font-weight: 800; letter-spacing: -0.035em;
+    line-height: 1.04; margin: 12px 0 10px;
+  }
+  .hero-subline { font-size: 14.5px; color: var(--muted); }
+  .hero-subline strong { color: var(--text); font-weight: 600; }
+  .hero-subline .sep { color: var(--border); margin: 0 9px; }
+  .hero-subline .moon { color: var(--accent); }
+
+  .wc-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 30px; gap: 12px; flex-wrap: wrap;
+  }
+  .wc-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted-2);
+  }
+  .wc-range { display: inline-flex; gap: 2px; }
+  .wc-range button {
+    background: transparent; border: none; cursor: pointer;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--muted-2); padding: 4px 9px; border-radius: 6px;
+    transition: all 0.15s;
+  }
+  .wc-range button:hover { color: var(--text); }
+  .wc-range button.active { background: rgba(52,211,153,0.12); color: var(--accent); }
+  .wc-score { display: flex; align-items: baseline; gap: 4px; margin-top: 10px; }
+  .wc-score .num { font-size: 62px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+  .wc-score .unit { font-size: 22px; color: var(--muted-2); font-weight: 600; }
+  .wc-score .delta {
+    font-size: 14px; font-family: 'JetBrains Mono', monospace;
+    margin-left: 10px; align-self: center;
+  }
+  .wc-score .delta.up { color: var(--accent); }
+  .wc-score .delta.down { color: var(--warn); }
+  .wc-score .delta.flat { color: var(--muted-2); }
+  .wc-chart { width: 100%; height: 138px; margin-top: 4px; }
+  .wc-chart svg { display: block; width: 100%; height: 100%; }
+  .wc-empty {
+    height: 138px; display: flex; align-items: center; justify-content: center;
+    color: var(--muted-2); font-size: 13px; text-align: center;
+  }
+
+  /* dose ring */
+  .dose-ring { position: relative; width: 200px; height: 200px; }
+  .dose-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .dose-ring-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .dose-ring-pct { font-size: 46px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+  .dose-ring-pct .sm { font-size: 18px; color: var(--muted-2); }
+  .dose-ring-sub {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted-2);
+    margin-top: 6px;
+  }
+  .dose-ring-cap { font-size: 13px; color: var(--muted); text-align: center; }
+  .dose-ring-cap strong { color: var(--text); font-weight: 600; }
+  .hero-cta {
+    width: 100%; background: var(--accent); color: #052e1a;
+    font-weight: 700; font-size: 14px; padding: 14px; border-radius: 12px;
+    border: none; cursor: pointer; transition: opacity 0.15s;
+  }
+  .hero-cta:hover { opacity: 0.92; }
+  .hero-cta.done {
+    background: transparent; color: var(--accent);
+    border: 1px solid rgba(52,211,153,0.3); cursor: default;
+  }
+
+  /* metric row */
+  .tm-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-bottom: 22px;
+  }
+  .tm-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px 20px 16px; }
+  .tm-head { display: flex; align-items: center; justify-content: space-between; }
+  .tm-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted-2);
+  }
+  .tm-delta {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    padding: 3px 8px; border-radius: 6px;
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted-2);
+  }
+  .tm-delta.up { color: var(--accent); border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.07); }
+  .tm-delta.down { color: var(--warn); border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.07); }
+  .tm-value { display: flex; align-items: baseline; gap: 3px; margin-top: 12px; }
+  .tm-value .num { font-size: 38px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+  .tm-value .unit { font-size: 14px; color: var(--muted-2); }
+  .tm-spark { height: 44px; margin: 10px 0 8px; }
+  .tm-spark svg { display: block; width: 100%; height: 100%; }
+  .tm-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    letter-spacing: 0.06em; color: var(--muted-2); padding-top: 10px;
+    border-top: 1px solid var(--border-2);
+  }
+
+  /* today grid */
+  .today-grid { display: grid; grid-template-columns: 1fr 372px; gap: 22px; }
+  .today-col-main, .today-col-side { display: flex; flex-direction: column; gap: 22px; }
+
+  .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  .section-title { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+  .section-sub {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-2); margin-top: 5px;
+  }
+
+  /* protocol rows */
+  .proto-row {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+  }
+  .proto-row:last-child { margin-bottom: 0; }
+  .proto-time {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--muted-2); min-width: 74px; flex-shrink: 0;
+  }
+  .proto-body { flex: 1; min-width: 0; }
+  .proto-name { font-size: 15px; font-weight: 600; }
+  .proto-name .dose { color: var(--muted-2); font-weight: 400; margin-left: 6px; font-size: 13px; }
+  .proto-meta {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--muted-2); margin-top: 4px;
+  }
+  .proto-logged {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent);
+    background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25);
+    padding: 6px 12px; border-radius: 8px;
+  }
+
+  /* stack rows */
+  .stack-row {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-left: 3px solid var(--muted-2);
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+  }
+  .stack-row:last-child { margin-bottom: 0; }
+  .stack-row-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .stack-row-name { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .stack-row-meta {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    color: var(--muted); margin-top: 6px;
+  }
+  .stack-adherence {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-2);
+    margin-top: 5px; text-align: right;
+  }
+
+  /* check-in card */
+  .checkin-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent);
+    background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25);
+    padding: 6px 11px; border-radius: 8px; margin-bottom: 16px;
+  }
+  .checkin-mini-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .checkin-mini {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 10px; text-align: center;
+  }
+  .checkin-mini .lbl {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-2);
+  }
+  .checkin-mini .val { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-top: 6px; }
+  .checkin-mini .val .u { font-size: 11px; color: var(--muted-2); font-weight: 500; }
+  .btn-wide {
+    width: 100%; background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); font-weight: 600; font-size: 13px;
+    padding: 11px; border-radius: 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-wide:hover { border-color: #333; background: #1f1f1f; }
+
+  /* streak card */
+  .streak-card { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 26px 24px; }
+  .streak-moon {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: rgba(52,211,153,0.10); border: 1px solid rgba(52,211,153,0.3);
+    display: flex; align-items: center; justify-content: center; color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .streak-card.cold .streak-moon {
+    background: rgba(115,115,115,0.08); border-color: rgba(115,115,115,0.25); color: var(--muted-2);
+  }
+  .streak-big { font-size: 54px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+  .streak-card.cold .streak-big { color: var(--muted-2); }
+  .streak-lbl {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted-2); margin-top: 8px;
+  }
+  .streak-msg { font-size: 13px; color: var(--muted); margin-top: 12px; line-height: 1.5; max-width: 240px; }
+
+  /* notes card */
+  .notes-blurb { font-size: 13.5px; color: var(--muted); line-height: 1.55; text-align: center; margin: 6px 0 16px; }
+  .note-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .note-chip {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+    font-size: 12px; padding: 7px 13px; border-radius: 999px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .note-chip:hover { border-color: rgba(52,211,153,0.4); color: var(--text); }
+  .today-note-item {
+    border-left: 2px solid var(--accent-dim); padding-left: 12px; margin-top: 14px;
+  }
+  .today-note-item .nd {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    color: var(--muted-2); letter-spacing: 0.05em; margin-bottom: 5px;
+  }
+  .today-note-item .nt { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  @media (max-width: 1080px) {
+    .today-hero { grid-template-columns: 1fr; }
+    .hero-left { padding-right: 0; }
+    .hero-right {
+      border-left: none; border-top: 1px solid var(--border);
+      padding-left: 0; padding-top: 24px; margin-top: 24px;
+    }
+    .today-grid { grid-template-columns: 1fr; }
+    .tm-row { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .today-hero { padding: 24px 20px; }
+    .hero-greeting { font-size: 38px; }
+    .wc-score .num { font-size: 48px; }
+    .tm-row { grid-template-columns: 1fr 1fr; }
+  }
 </style>
 
 <link rel="manifest" href="/manifest.json">
@@ -651,83 +919,83 @@
 <!-- ===== TODAY TAB ===== -->
 <main id="tab-today" class="mx-auto px-6 py-8" style="max-width: 1400px;">
 
-  <div class="flex items-start justify-between mb-8 flex-wrap gap-4">
-    <div>
-      <div class="text-xs mono uppercase tracking-widest" style="color: var(--muted-2); margin-bottom: 6px;" id="today-greeting-label">Today</div>
-      <h1 class="text-3xl md:text-4xl font-bold tracking-tight" style="letter-spacing: -0.025em;" id="today-greeting">Good morning</h1>
-      <p class="text-sm muted mt-2" id="today-subtitle">No active stack yet.</p>
-      <div class="today-streak-chip cold" id="today-streak-chip">
-        <div class="today-streak-chip-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
-          </svg>
-        </div>
-        <div>
-          <div class="today-streak-chip-num" id="today-streak-num">0</div>
-          <div class="today-streak-chip-label" id="today-streak-label">Log today to start your streak</div>
-        </div>
-      </div>
-      <div class="cycle-progress" id="cycle-progress" style="display: none;">
-        <div class="cycle-progress-label">
-          <strong id="cycle-progress-week">Week 1 of 12</strong>
-          <span class="pct" id="cycle-progress-pct">0% complete</span>
-        </div>
-        <div class="cycle-progress-bar">
-          <div class="cycle-progress-bar-fill" id="cycle-progress-fill" style="width: 0%;"></div>
-        </div>
-      </div>
-    </div>
-    <div class="flex items-center gap-3">
-      <button class="btn-small" onclick="openAddNote()">+ Note</button>
-      <button class="btn-small" onclick="openCheckin()">+ Check-in</button>
-    </div>
-  </div>
-
-  <!-- Onboarding panel (shown during initial setup; hidden once a stack exists). -->
+  <!-- Onboarding card — shown only during initial setup. -->
   <div id="onboarding-panel" class="onboarding-panel hidden"></div>
 
-  <!-- Today's metric card row (filled in if today's check-in exists) -->
-  <div id="today-metric-row" class="grid md:grid-cols-4 gap-4 mb-6"></div>
+  <!-- Populated Today dashboard -->
+  <div id="today-dashboard">
 
-  <!-- Main grid -->
-  <div class="grid lg:grid-cols-3 gap-6">
+    <!-- HERO -->
+    <div class="panel today-hero" id="today-hero">
+      <div class="hero-left">
+        <div class="hero-eyebrow"><span class="dot"></span><span id="hero-eyebrow-text">Today</span></div>
+        <h1 class="hero-greeting" id="today-greeting">Good morning</h1>
+        <div class="hero-subline" id="today-subtitle">No active stack yet.</div>
 
-    <!-- LEFT: Today's protocol -->
-    <div class="lg:col-span-2 space-y-6">
-      <div class="panel p-6" id="today-protocol-panel">
-        <div class="flex items-start justify-between mb-5">
-          <div>
-            <h2 class="text-lg font-bold tracking-tight">Today's protocol</h2>
-            <p class="text-xs mt-1" style="color: var(--muted-2);" id="today-date-line">—</p>
+        <div class="wc-head">
+          <div class="wc-label">Wellness Composite</div>
+          <div class="wc-range" id="wc-range">
+            <button data-r="7">7D</button>
+            <button data-r="14" class="active">14D</button>
+            <button data-r="30">1M</button>
+            <button data-r="90">3M</button>
+            <button data-r="all">All</button>
           </div>
-          <button class="btn-small" onclick="switchTab('stack')">Manage stack</button>
         </div>
-        <div id="today-protocol-list"></div>
+        <div class="wc-score" id="wc-score"></div>
+        <div class="wc-chart" id="wc-chart"></div>
       </div>
-
-      <div class="panel p-6">
-        <div class="flex items-start justify-between mb-5">
-          <h2 class="text-lg font-bold tracking-tight">Current stack</h2>
-          <button class="btn-small" onclick="openAddCompound()">+ Add compound</button>
-        </div>
-        <div id="today-stack-list" class="space-y-3"></div>
+      <div class="hero-right">
+        <div class="dose-ring" id="dose-ring"></div>
+        <div class="dose-ring-cap" id="dose-ring-cap"></div>
+        <button class="hero-cta" id="hero-cta" onclick="heroCtaClick()">Log dose</button>
       </div>
     </div>
 
-    <!-- RIGHT: Check-in + Notes -->
-    <div class="space-y-6">
-      <div class="panel p-5" id="today-checkin-panel">
-        <h3 class="text-base font-bold tracking-tight mb-1">Daily check-in</h3>
-        <p class="text-xs muted-2 mb-4" id="checkin-status">Not logged yet today.</p>
-        <button class="btn-primary w-full justify-center" onclick="openCheckin()" id="checkin-btn">+ Quick check-in</button>
+    <!-- METRIC ROW -->
+    <div class="tm-row" id="today-metric-row"></div>
+
+    <!-- MAIN GRID -->
+    <div class="today-grid">
+      <div class="today-col-main">
+        <div class="panel p-6" id="today-protocol-panel">
+          <div class="section-head">
+            <div>
+              <div class="section-title">Today's protocol</div>
+              <div class="section-sub" id="today-date-line">&mdash;</div>
+            </div>
+            <button class="btn-small" onclick="switchTab('stack')">Manage stack</button>
+          </div>
+          <div id="today-protocol-list"></div>
+        </div>
+
+        <div class="panel p-6" id="today-stack-panel">
+          <div class="section-head">
+            <div>
+              <div class="section-title">Current stack</div>
+              <div class="section-sub" id="today-stack-count">&mdash;</div>
+            </div>
+            <button class="btn-small" onclick="openAddCompound()">+ Add compound</button>
+          </div>
+          <div id="today-stack-list"></div>
+        </div>
       </div>
 
-      <div class="panel p-5">
-        <div class="flex items-start justify-between mb-5">
-          <h3 class="text-base font-bold tracking-tight">Recent notes</h3>
-          <button class="btn-small" onclick="openAddNote()">+ Add</button>
+      <div class="today-col-side">
+        <div class="panel p-6" id="today-checkin-panel">
+          <div class="section-title" style="margin-bottom: 14px;">Daily check-in</div>
+          <div id="checkin-body"></div>
         </div>
-        <div id="today-notes-list" class="space-y-4"></div>
+
+        <div class="panel streak-card" id="today-streak-card"></div>
+
+        <div class="panel p-6" id="today-notes-panel">
+          <div class="section-head" style="margin-bottom: 2px;">
+            <div class="section-title">Notes</div>
+            <button class="btn-small" onclick="openAddNote()">+ New</button>
+          </div>
+          <div id="today-notes-body"></div>
+        </div>
       </div>
     </div>
 
@@ -1288,76 +1556,274 @@ function renderToday() {
   const hour = now.getHours();
   const name = userDisplayName();
   const base = hour < 4 ? 'Up late' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : hour < 22 ? 'Good evening' : 'Up late';
-  const greeting = base + (name ? ', ' + name : '');
-  document.getElementById('today-greeting').textContent = greeting;
-  document.getElementById('today-date-line').textContent = fmtDateLong(now.toISOString());
+  document.getElementById('today-greeting').textContent = base + (name ? ', ' + name : '') + '.';
 
-  // Streak
-  const streak = calcStreak();
-  // Header pill is hidden (kept in DOM so legacy callers don't break)
-  const headerText = document.getElementById('streak-text');
-  if (headerText) headerText.innerHTML = `STREAK · <strong>${streak} day${streak===1?'':'s'}</strong>`;
-  // Body chip is the primary display
-  const chip = document.getElementById('today-streak-chip');
-  const chipNum = document.getElementById('today-streak-num');
-  const chipLabel = document.getElementById('today-streak-label');
-  if (chip && chipNum && chipLabel) {
-    chipNum.textContent = streak;
-    if (streak === 0) {
-      chip.classList.add('cold');
-      chipLabel.textContent = 'Daily check-in to start your streak';
-    } else if (streak === 1) {
-      chip.classList.remove('cold');
-      chipLabel.textContent = `Day streak — check in tomorrow to keep it going`;
-    } else {
-      chip.classList.remove('cold');
-      chipLabel.textContent = `Day streak — keep checking in to extend it`;
-    }
-  }
+  // Hero eyebrow — WEEKDAY · MONTH DAY · WEEK NN (ISO week of year)
+  document.getElementById('hero-eyebrow-text').textContent =
+    now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase()
+    + ' · WEEK ' + isoWeek(now);
 
+  // Protocol panel sub-line — SAT, MAY 23 · N SCHEDULED
+  const sched = todayScheduledDoses();
+  document.getElementById('today-date-line').textContent =
+    fmtDateLong(now.toISOString()).toUpperCase() + '  ·  ' + sched.length + ' SCHEDULED';
+
+  // Hero sub-line
   const stack = activeStack();
-  const subtitle = document.getElementById('today-subtitle');
+  const sub = document.getElementById('today-subtitle');
   if (stack) {
     const day = dayOfStack(stack);
-    const protocolList = state.doses.filter(d => (d.timestamp || '').slice(0,10) === todayISO()).length;
-    subtitle.innerHTML = `Day <strong style="color: var(--text);">${day}</strong>${stack.duration ? ` of ${stack.duration}` : ''} · ${stack.name} · ${protocolList} dose${protocolList===1?'':'s'} logged today`;
-  } else if (state.stacks.length === 0) {
-    subtitle.innerHTML = `Welcome to your logbook. <button onclick="openNewStack()" style="color: var(--accent); text-decoration: underline; background: none; border: none; cursor: pointer; font-size: 14px;">Create your first stack</button> to start tracking.`;
+    const streak = calcStreak();
+    const streakPart = streak > 0
+      ? `<span class="moon">☾</span> <strong>${streak} day${streak === 1 ? '' : 's'}</strong> streak`
+      : `<strong>No streak yet</strong>`;
+    sub.innerHTML = `Day <strong>${day}</strong> of ${escapeHtml(stack.name || 'your stack')}`
+      + `<span class="sep">·</span>${streakPart}`
+      + `<span class="sep">·</span>${nextDoseText()}`;
   } else {
-    subtitle.innerHTML = `No active stack selected. <button onclick="switchTab('stack')" style="color: var(--accent); text-decoration: underline; background: none; border: none; cursor: pointer; font-size: 14px;">Pick one</button> from your stacks tab.`;
+    sub.textContent = 'Set up your stack to start tracking.';
   }
 
+  wireWcRange();
+  renderTodayHero();
   renderTodayMetrics();
   renderTodayProtocol();
   renderTodayStack();
   renderCheckinPanel();
+  renderStreakCard();
   renderTodayNotes();
   updateLogDoseCta();
-  renderCycleProgress();
   renderOnboardingPanel();
+}
+
+// ISO-8601 week number of the year.
+function isoWeek(d) {
+  const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = dt.getUTCDay() || 7;
+  dt.setUTCDate(dt.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+  return Math.ceil(((dt - yearStart) / 86400000 + 1) / 7);
+}
+
+const TAG_COLOR = { healing: '#93c5fd', glp1: '#c4b5fd', gh: '#fcd34d', cognitive: '#f9a8d4', metabolic: '#fdba74' };
+
+// Today's expected doses, with logged state, sorted by time.
+function todayScheduledDoses() {
+  const stack = activeStack();
+  if (!stack || !stack.compounds) return [];
+  const out = [];
+  stack.compounds.forEach(c => {
+    expectedDosesToday(c).forEach(t => {
+      const logged = state.doses.some(d =>
+        d.compoundId === c.id && (d.timestamp || '').slice(0, 10) === todayISO());
+      out.push({ compound: c, time: t.time || '—', logged });
+    });
+  });
+  out.sort((a, b) => parseTimeMin(a.time) - parseTimeMin(b.time));
+  return out;
+}
+function parseTimeMin(s) {
+  if (!s || s === '—') return 99999;
+  const m = String(s).match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!m) return 99999;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ap = (m[3] || '').toUpperCase();
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + min;
+}
+function timingWord(time) {
+  const m = parseTimeMin(time);
+  if (m >= 99999) return 'Anytime';
+  if (m < 12 * 60) return 'Morning';
+  if (m < 17 * 60) return 'Afternoon';
+  return 'Evening';
+}
+function nextDoseText() {
+  const sched = todayScheduledDoses();
+  const unlogged = sched.filter(d => !d.logged);
+  if (unlogged.length === 0) return sched.length ? '<strong>All doses logged</strong>' : '<strong>Nothing scheduled</strong>';
+  const timed = unlogged.filter(d => d.time && d.time !== '—');
+  if (timed.length === 0) return 'Next dose <strong>anytime today</strong>';
+  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+  let best = null;
+  timed.forEach(d => {
+    const diff = parseTimeMin(d.time) - nowMin;
+    if (diff >= 0 && (best === null || diff < best)) best = diff;
+  });
+  if (best === null) return 'Next dose <strong>due now</strong>';
+  const h = Math.floor(best / 60), m = best % 60;
+  return `Next dose in <strong>${(h > 0 ? h + 'h ' : '') + m + 'm'}</strong>`;
+}
+
+// ---- Wellness composite (mean of energy / sleep / mood per check-in) ----
+let _wcRange = 14;
+function wcSeries() {
+  return (state.checkins || [])
+    .filter(c => c.date)
+    .map(c => {
+      const parts = [c.energy, c.sleep, c.mood].map(Number).filter(v => !isNaN(v) && v > 0);
+      return { date: new Date(c.date), value: parts.length ? parts.reduce((s, v) => s + v, 0) / parts.length : null };
+    })
+    .filter(p => p.value != null && !isNaN(p.date))
+    .sort((a, b) => a.date - b.date);
+}
+function wireWcRange() {
+  if (wireWcRange._done) return;
+  wireWcRange._done = true;
+  document.querySelectorAll('#wc-range button').forEach(b => {
+    b.addEventListener('click', () => wcSetRange(b.dataset.r));
+  });
+}
+function wcSetRange(r) {
+  _wcRange = (r === 'all') ? 'all' : Number(r);
+  document.querySelectorAll('#wc-range button').forEach(b => b.classList.toggle('active', b.dataset.r === String(r)));
+  renderTodayHero();
+}
+function renderTodayHero() {
+  const all = wcSeries();
+  const now = new Date(); now.setHours(23, 59, 59, 999);
+  let tMin;
+  if (_wcRange === 'all') tMin = all.length ? new Date(all[0].date) : new Date(now);
+  else { tMin = new Date(now); tMin.setDate(now.getDate() - _wcRange); tMin.setHours(0, 0, 0, 0); }
+  const pts = all.filter(p => p.date >= tMin && p.date <= now);
+  const scoreEl = document.getElementById('wc-score');
+  const chartEl = document.getElementById('wc-chart');
+  if (pts.length === 0) {
+    scoreEl.innerHTML = `<span class="num">—</span><span class="unit">/10</span>`;
+    chartEl.innerHTML = `<div class="wc-empty">No check-ins in this range yet —<br>do a daily check-in to start the trend.</div>`;
+  } else {
+    const last = pts[pts.length - 1].value, first = pts[0].value;
+    const delta = last - first;
+    const pct = first > 0 ? (delta / first) * 100 : 0;
+    const cls = Math.abs(delta) < 0.05 ? 'flat' : (delta > 0 ? 'up' : 'down');
+    const arrow = cls === 'flat' ? '–' : (delta > 0 ? '↑' : '↓');
+    const dTxt = cls === 'flat' ? 'no change'
+      : `${arrow} ${delta > 0 ? '+' : ''}${delta.toFixed(2)} (${pct.toFixed(1)}%)`;
+    scoreEl.innerHTML = `<span class="num">${last.toFixed(2)}</span><span class="unit">/10</span>`
+      + `<span class="delta ${cls}">${dTxt}</span>`;
+    chartEl.innerHTML = wcChartSVG(pts, tMin, now);
+  }
+  renderDoseRing();
+}
+function wcChartSVG(pts, tMin, tMax) {
+  const W = 720, H = 112, padX = 6, padT = 12, padB = 8;
+  const vals = pts.map(p => p.value);
+  let vMin = Math.min(...vals), vMax = Math.max(...vals);
+  const sp = (vMax - vMin) || 2;
+  vMin = Math.max(0, vMin - sp * 0.5); vMax = vMax + sp * 0.3;
+  const tSpan = (tMax - tMin) || 1;
+  const xS = d => padX + ((d - tMin) / tSpan) * (W - padX * 2);
+  const yS = v => padT + (1 - (v - vMin) / ((vMax - vMin) || 1)) * (H - padT - padB);
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'} ${xS(p.date).toFixed(1)} ${yS(p.value).toFixed(1)}`).join(' ');
+  const area = `${line} L ${xS(pts[pts.length-1].date).toFixed(1)} ${H-padB} L ${xS(pts[0].date).toFixed(1)} ${H-padB} Z`;
+  const lx = xS(pts[pts.length - 1].date).toFixed(1), ly = yS(pts[pts.length - 1].value).toFixed(1);
+  let labels = '';
+  const nL = 4;
+  for (let i = 0; i <= nL; i++) {
+    const isLast = i === nL;
+    const dt = new Date(tMin.getTime() + (i / nL) * tSpan);
+    const txt = isLast ? 'TODAY' : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+    labels += `<span style="color:${isLast ? '#34d399' : '#737373'}">${txt}</span>`;
+  }
+  return `<svg style="width:100%;height:84px;display:block" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs><linearGradient id="wcg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#34d399" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#34d399" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#wcg)" stroke="none"/>
+    <path d="${line}" fill="none" stroke="#34d399" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${lx}" cy="${ly}" r="3.4" fill="#34d399" vector-effect="non-scaling-stroke"/>
+  </svg>
+  <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.06em">${labels}</div>`;
+}
+function renderDoseRing() {
+  const sched = todayScheduledDoses();
+  const total = sched.length;
+  const done = sched.filter(d => d.logged).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const r = 82, circ = 2 * Math.PI * r;
+  const off = circ * (1 - pct / 100);
+  document.getElementById('dose-ring').innerHTML = `
+    <svg viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="${r}" fill="none" stroke="#1f1f1f" stroke-width="15"/>
+      <circle cx="100" cy="100" r="${r}" fill="none" stroke="#34d399" stroke-width="15"
+        stroke-linecap="round" stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
+    </svg>
+    <div class="dose-ring-center">
+      <div class="dose-ring-pct">${pct}<span class="sm">%</span></div>
+      <div class="dose-ring-sub">Today</div>
+    </div>`;
+  const left = total - done;
+  document.getElementById('dose-ring-cap').innerHTML = total === 0
+    ? `<strong>Nothing scheduled</strong> today`
+    : `<strong>${done} of ${total}</strong> complete${left > 0 ? ` · ${left} dose${left === 1 ? '' : 's'} left` : ''}`;
+  const cta = document.getElementById('hero-cta');
+  const next = sched.find(d => !d.logged);
+  if (next) {
+    cta.className = 'hero-cta';
+    cta.textContent = `Log ${next.compound.name} →`;
+    cta.dataset.compoundId = next.compound.id;
+    cta.dataset.time = next.time;
+  } else if (total > 0) {
+    cta.className = 'hero-cta done';
+    cta.textContent = '✓ All doses logged';
+    cta.dataset.compoundId = '';
+  } else {
+    cta.className = 'hero-cta';
+    cta.textContent = 'Log a dose';
+    cta.dataset.compoundId = '';
+  }
+}
+function heroCtaClick() {
+  const cta = document.getElementById('hero-cta');
+  if (cta.classList.contains('done')) return;
+  const cid = cta.dataset.compoundId;
+  if (cid) quickLog(cid, cta.dataset.time || '—');
+  else openLogDose();
+}
+
+// Small inline sparkline used by the metric cards.
+function sparklineSVG(pts, color) {
+  const W = 240, H = 44;
+  if (!pts || pts.length < 2) {
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <line x1="2" y1="${H/2}" x2="${W-2}" y2="${H/2}" stroke="#404040" stroke-width="1.4"
+        stroke-dasharray="5 5" vector-effect="non-scaling-stroke"/></svg>`;
+  }
+  const vals = pts.map(p => p.value);
+  let vMin = Math.min(...vals), vMax = Math.max(...vals);
+  const sp = (vMax - vMin) || 1; vMin -= sp * 0.25; vMax += sp * 0.25;
+  const xS = i => 2 + (i / (pts.length - 1)) * (W - 4);
+  const yS = v => 3 + (1 - (v - vMin) / ((vMax - vMin) || 1)) * (H - 6);
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'} ${xS(i).toFixed(1)} ${yS(p.value).toFixed(1)}`).join(' ');
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+function renderStreakCard() {
+  const el = document.getElementById('today-streak-card');
+  if (!el) return;
+  const streak = calcStreak();
+  const cold = streak === 0;
+  el.classList.toggle('cold', cold);
+  const moon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+  el.innerHTML = `
+    <div class="streak-moon">${moon}</div>
+    <div class="streak-big">${streak}</div>
+    <div class="streak-lbl">Day Streak</div>
+    <div class="streak-msg">${cold
+      ? 'Do a daily check-in to start your streak.'
+      : 'Check in tomorrow before midnight to keep your streak alive.'}</div>`;
 }
 
 
 function gateEmptyTodayChrome(hideAll) {
-  // Also hide the streak chip + cycle progress during onboarding.
-  const chip = document.getElementById('today-streak-chip');
-  if (chip) chip.classList.toggle('hidden', hideAll);
-  const cyc = document.getElementById('cycle-progress');
-  if (cyc) cyc.classList.toggle('hidden', hideAll);
-  // P1-2 — when no stack/compounds, hide secondary CTAs and panels.
-  const ids = ['today-protocol-panel'];
-  ids.forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('hidden', hideAll); });
-  const rightCol = document.querySelector('#tab-today .grid.lg\\:grid-cols-3 > div:nth-child(2)');
-  if (rightCol) rightCol.classList.toggle('hidden', hideAll);
-  // Hide Current Stack panel (second panel in the left column)
-  const leftCol = document.querySelector('#tab-today .lg\\:col-span-2');
-  if (leftCol) {
-    const panels = leftCol.querySelectorAll(':scope > .panel');
-    panels.forEach((p, i) => { if (i >= 1) p.classList.toggle('hidden', hideAll); });
-  }
-  // Hide +Note / +Check-in header buttons
-  const headerBtnRow = document.querySelector('#tab-today .flex.items-start.justify-between .flex.items-center.gap-3');
-  if (headerBtnRow) headerBtnRow.classList.toggle('hidden', hideAll);
+  // During onboarding, hide the whole dashboard so only the onboarding card shows.
+  const dash = document.getElementById('today-dashboard');
+  if (dash) dash.classList.toggle('hidden', hideAll);
 }
 
 function renderOnboardingPanel() {
@@ -1453,99 +1919,81 @@ function renderCycleProgress() {
 
 function renderTodayMetrics() {
   const row = document.getElementById('today-metric-row');
-  const recent = state.checkins.slice(-30);
-  if (recent.length === 0) { row.innerHTML = ''; return; }
-  const last = recent[recent.length - 1];
-  const prevWeek = recent.slice(-14, -7);
-  const lastWeek = recent.slice(-7);
-  const avg = (arr, k) => arr.length ? (arr.reduce((s,x) => s + (x[k] || 0), 0) / arr.filter(x => x[k]).length) : 0;
+  const defs = [
+    { key: 'energy', label: 'Energy', unit: '/10' },
+    { key: 'sleep',  label: 'Sleep',  unit: '/10' },
+    { key: 'mood',   label: 'Mood',   unit: '/10' },
+    { key: 'weight', label: 'Weight', unit: 'lb' },
+  ];
+  row.innerHTML = defs.map(metricCardToday).join('');
+}
+function metricCardToday(def) {
+  const pts = (state.checkins || [])
+    .filter(c => c.date && c[def.key] != null && Number(c[def.key]) > 0)
+    .map(c => ({ date: new Date(c.date), value: Number(c[def.key]) }))
+    .filter(p => !isNaN(p.date))
+    .sort((a, b) => a.date - b.date);
 
-  function metric(label, key, value, unit) {
-    const lw = avg(lastWeek, key);
-    const pw = avg(prevWeek, key);
-    const delta = pw > 0 ? Math.round(((lw - pw) / pw) * 100) : 0;
-    const deltaText = delta === 0 ? 'stable' : (delta > 0 ? `+${delta}%` : `${delta}%`);
-    const deltaClass = delta === 0 ? 'neutral' : '';
-    return `
-      <div class="panel p-5">
-        <div class="flex items-start justify-between mb-3">
-          <div class="text-[11px] mono uppercase tracking-widest" style="color: var(--muted-2);">${label}</div>
-          <span class="badge ${deltaClass === 'neutral' ? '' : 'due'}">${deltaText}</span>
-        </div>
-        <div class="flex items-baseline gap-1.5">
-          <span class="text-3xl font-bold" style="letter-spacing: -0.02em;">${value || '—'}</span>
-          <span class="text-sm muted-2">${unit}</span>
-        </div>
-      </div>
-    `;
+  if (pts.length === 0) {
+    return `<div class="tm-card">
+      <div class="tm-head"><div class="tm-label">${def.label}</div><span class="tm-delta">log it</span></div>
+      <div class="tm-value"><span class="num">—</span><span class="unit">${def.unit}</span></div>
+      <div class="tm-spark">${sparklineSVG([], '#737373')}</div>
+      <div class="tm-foot"><span>LAST</span><span>never</span></div>
+    </div>`;
   }
 
-  row.innerHTML = `
-    ${metric('Energy', 'energy', last.energy, '/10')}
-    ${metric('Sleep', 'sleep', last.sleep, '/10')}
-    ${metric('Mood', 'mood', last.mood, '/10')}
-    ${metric('Weight', 'weight', last.weight, 'lb')}
-  `;
+  const last = pts[pts.length - 1].value;
+  const prev = pts.length > 1 ? pts[pts.length - 2].value : last;
+  const delta = last - prev;
+  const flat = Math.abs(delta) < 0.05;
+  const dCls = flat ? '' : (delta > 0 ? 'up' : 'down');
+  const dArrow = flat ? '–' : (delta > 0 ? '↑' : '↓');
+  const color = flat ? '#737373' : (delta > 0 ? '#34d399' : '#fbbf24');
+  const last7 = pts.slice(-7);
+  const avg7 = last7.reduce((s, p) => s + p.value, 0) / last7.length;
+  const fmt = v => (Number.isInteger(v) ? String(v) : v.toFixed(1));
+
+  return `<div class="tm-card">
+    <div class="tm-head">
+      <div class="tm-label">${def.label}</div>
+      <span class="tm-delta ${dCls}">${dArrow} ${Math.abs(delta).toFixed(1)}</span>
+    </div>
+    <div class="tm-value"><span class="num">${fmt(last)}</span><span class="unit">${def.unit}</span></div>
+    <div class="tm-spark">${sparklineSVG(pts.slice(-14), color)}</div>
+    <div class="tm-foot"><span>7D AVG</span><span>${avg7.toFixed(1)}</span></div>
+  </div>`;
 }
 
 function renderTodayProtocol() {
   const stack = activeStack();
   const list = document.getElementById('today-protocol-list');
   if (!stack || !stack.compounds || stack.compounds.length === 0) {
-    list.innerHTML = `<div class="empty-state" style="padding: 30px 20px;">
+    list.innerHTML = `<div class="empty-state" style="padding: 26px 20px;">
       <p>No compounds in your active stack. Add some to see today's protocol.</p>
       <button class="btn-primary" onclick="openAddCompound()">+ Add compound</button>
     </div>`;
     return;
   }
-
-  // Build today's expected doses based on frequency
-  const todayDoses = [];
-  stack.compounds.forEach(c => {
-    const todaysFreq = expectedDosesToday(c);
-    todaysFreq.forEach(t => {
-      const wasLogged = state.doses.some(d =>
-        d.compoundId === c.id &&
-        (d.timestamp || '').slice(0,10) === todayISO() &&
-        (!t.time || matchTime(d.timestamp, t.time))
-      );
-      todayDoses.push({
-        compound: c, time: t.time || '—',
-        wasLogged, slotKey: t.time || 'any'
-      });
-    });
-  });
-
-  // Sort by time
-  todayDoses.sort((a,b) => (a.time || 'zz').localeCompare(b.time || 'zz'));
-
-  if (todayDoses.length === 0) {
-    list.innerHTML = `<p class="muted text-sm">No doses scheduled for today based on stack frequency.</p>`;
+  const sched = todayScheduledDoses();
+  if (sched.length === 0) {
+    list.innerHTML = `<p class="muted text-sm">No doses scheduled for today based on your stack's frequency.</p>`;
     return;
   }
-
-  list.innerHTML = todayDoses.map((p, idx) => {
-    if (p.wasLogged) {
-      return `
-        <div class="flex items-start gap-3 py-2">
-          <div class="text-xs mono pt-0.5" style="color: var(--muted-2); min-width: 56px;">${p.time}</div>
-          <div class="flex-1">
-            <div class="logged-text text-sm font-medium">${p.compound.name} · ${p.compound.dose}</div>
-            <div class="logged-confirm mt-1">✓ Logged today</div>
-          </div>
-        </div>
-      `;
-    }
-    return `
-      <div class="flex items-start gap-3 py-2">
-        <div class="text-xs mono pt-0.5" style="color: var(--muted-2); min-width: 56px;">${p.time}</div>
-        <div class="flex-1">
-          <div class="text-sm font-medium">${p.compound.name} · ${p.compound.dose}</div>
-          <div class="text-xs mt-0.5" style="color: var(--muted-2);">${p.compound.route} · ${p.compound.frequency}</div>
-        </div>
-        <button class="btn-log" onclick="quickLog('${p.compound.id}', '${p.time}')">Log</button>
+  list.innerHTML = sched.map(p => {
+    const c = p.compound;
+    const meta = `${escapeHtml(c.route || '—')} · ${timingWord(p.time)} · ${escapeHtml(c.frequency || '')}`;
+    const status = p.logged
+      ? `<span class="proto-logged">✓ Logged</span>`
+      : `<button class="btn-log" onclick="quickLog('${c.id}', '${p.time}')">Log</button>`;
+    return `<div class="proto-row">
+      <div class="proto-time">${p.time}</div>
+      <div class="proto-body">
+        <div class="proto-name">${escapeHtml(c.name)}<span class="dose">${escapeHtml(c.dose || '')}</span></div>
+        <div class="proto-meta">${meta}</div>
       </div>
-    `;
+      ${status}
+    </div>`;
   }).join('');
 }
 
@@ -1581,75 +2029,95 @@ function matchTime(timestamp, slotTime) {
   return true; // for simplicity, any same-day dose for that compound counts
 }
 
+function weeklyTarget(c, todayIdx) {
+  const elapsed = todayIdx + 1;            // days Mon..today inclusive
+  const f = c.frequency;
+  if (f === '2× weekly') return 2;
+  if (f === '1× weekly') return 1;
+  if (f === 'Every other day') return Math.ceil(elapsed / 2);
+  if (f === 'As needed') return Math.max(1, dosesThisWeekByCompound(c.id).filter(Boolean).length);
+  return elapsed;                          // Daily / 2× daily / Nightly
+}
 function renderTodayStack() {
   const stack = activeStack();
   const list = document.getElementById('today-stack-list');
+  const countEl = document.getElementById('today-stack-count');
   if (!stack || !stack.compounds || stack.compounds.length === 0) {
+    if (countEl) countEl.textContent = '0 ACTIVE COMPOUNDS';
     list.innerHTML = `<p class="muted text-sm">Add compounds to your stack to see them here.</p>`;
     return;
   }
+  if (countEl) countEl.textContent = `${stack.compounds.length} ACTIVE COMPOUND${stack.compounds.length === 1 ? '' : 'S'}`;
   const dayLabels = ['M','T','W','T','F','S','S'];
   const jsDay = new Date().getDay();
   const todayIdx = jsDay === 0 ? 6 : jsDay - 1;
 
   list.innerHTML = stack.compounds.map(c => {
     const week = dosesThisWeekByCompound(c.id);
-    const dots = week.map((filled, i) => `
-      <div class="dose-day ${i === todayIdx ? 'today' : ''}">
+    const done = week.filter(Boolean).length;
+    const target = weeklyTarget(c, todayIdx);
+    const tagColor = TAG_COLOR[c.tag] || '#737373';
+    const dots = week.map((filled, i) => `<div class="dose-day ${i === todayIdx ? 'today' : ''}">
         <span class="dose-day-label">${dayLabels[i]}</span>
         <span class="dose-dot ${filled ? 'filled' : ''}"></span>
-      </div>
-    `).join('');
-    const dueBadge = c.due ? `<span class="badge due">Due ${c.due}</span>` : '';
-    return `
-      <div class="panel-2 p-4">
-        <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
-          <div class="flex items-center gap-2.5 flex-wrap">
-            <span class="font-semibold text-[15px]">${c.name}</span>
-            ${c.tag ? `<span class="badge ${tagClass(c.tag)}">${tagLabel(c.tag)}</span>` : ''}
-            ${dueBadge}
-          </div>
+      </div>`).join('');
+    return `<div class="stack-row" style="border-left-color: ${tagColor};">
+      <div class="stack-row-top">
+        <div style="min-width:0;">
+          <div class="stack-row-name">${escapeHtml(c.name)}
+            ${c.tag ? `<span class="badge ${tagClass(c.tag)}">${tagLabel(c.tag)}</span>` : ''}</div>
+          <div class="stack-row-meta">${escapeHtml(c.dose || '')} · ${escapeHtml(c.route || '')} · ${escapeHtml(c.frequency || '')}</div>
+        </div>
+        <div style="flex-shrink:0;">
           <div class="dose-week">${dots}</div>
+          <div class="stack-adherence">${done}/${target} adherence this week</div>
         </div>
-        <div class="text-xs mono mb-2" style="color: var(--muted);">
-          ${c.dose} · ${c.route} · ${c.frequency}
-        </div>
-        ${c.goal ? `<div class="text-xs mb-1" style="color: var(--muted-2);">Goal: ${c.goal}</div>` : ''}
-        ${c.vendor ? `<div class="text-xs" style="color: var(--muted-2);">Vendor: ${c.vendor}${c.purity ? ` (${c.purity}% pure)` : ''}</div>` : ''}
       </div>
-    `;
+    </div>`;
   }).join('');
 }
 
 function renderCheckinPanel() {
+  const body = document.getElementById('checkin-body');
+  if (!body) return;
   const today = todayISO();
-  const todayCheckin = state.checkins.find(c => (c.date || '').slice(0,10) === today);
-  const status = document.getElementById('checkin-status');
-  const btn = document.getElementById('checkin-btn');
-  if (todayCheckin) {
-    status.innerHTML = `<span class="accent-text">✓ Logged today</span> · Energy ${todayCheckin.energy} · Sleep ${todayCheckin.sleep} · Mood ${todayCheckin.mood}${todayCheckin.weight ? ` · ${todayCheckin.weight} lb` : ''}`;
-    btn.textContent = 'Update today';
+  const ci = (state.checkins || []).find(c => (c.date || '').slice(0,10) === today);
+  if (ci) {
+    const t = ci.timestamp || ci.date;
+    let timeStr = '';
+    try { timeStr = t ? new Date(t).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''; }
+    catch (e) { timeStr = ''; }
+    const mini = (lbl, v) => `<div class="checkin-mini">
+        <div class="lbl">${lbl}</div>
+        <div class="val">${v != null ? v : '—'}<span class="u">/10</span></div>
+      </div>`;
+    body.innerHTML = `
+      <div class="checkin-badge">✓ Logged${timeStr ? ' ' + timeStr.toUpperCase() : ''}</div>
+      <div class="checkin-mini-row">
+        ${mini('Energy', ci.energy)}${mini('Sleep', ci.sleep)}${mini('Mood', ci.mood)}
+      </div>
+      <button class="btn-wide" onclick="openCheckin()">Update today</button>`;
   } else {
-    status.textContent = 'Not logged yet today.';
-    btn.innerHTML = '+ Quick check-in';
+    body.innerHTML = `
+      <p class="muted text-sm" style="margin-bottom: 14px;">You haven't checked in today. Log your energy, sleep, and mood.</p>
+      <button class="btn-primary" style="width:100%; justify-content:center;" onclick="openCheckin()">+ Quick check-in</button>`;
   }
 }
 
 function renderTodayNotes() {
-  const list = document.getElementById('today-notes-list');
-  const recent = [...state.notes].slice(-5).reverse();
-  if (recent.length === 0) {
-    list.innerHTML = `<p class="muted text-sm">No notes yet.</p>`;
-    return;
-  }
-  list.innerHTML = recent.map(n => `
-    <div class="flex gap-3" style="border-left: 2px solid var(--accent-dim); padding-left: 12px;">
-      <div class="flex-1">
-        <div class="text-[11px] mono mb-1.5" style="color: var(--muted-2); letter-spacing: 0.05em;">${fmtDate(n.date)}</div>
-        <div class="text-sm leading-relaxed" style="color: var(--muted);">${escapeHtml(n.text)}</div>
-      </div>
-    </div>
-  `).join('');
+  const body = document.getElementById('today-notes-body');
+  if (!body) return;
+  const recent = [...(state.notes || [])].slice(-3).reverse();
+  const chips = ['Sleep quality', 'Injection site', 'Workout PR', 'Side effect', 'Mood note']
+    .map(t => `<button class="note-chip" onclick="openAddNote('${t}: ')">${t}</button>`).join('');
+  let html = recent.length === 0
+    ? `<p class="notes-blurb">Capture side effects, observations, or wins from today.</p>`
+    : recent.map(n => `<div class="today-note-item">
+        <div class="nd">${fmtDate(n.date).toUpperCase()}</div>
+        <div class="nt">${escapeHtml(n.text)}</div>
+      </div>`).join('');
+  html += `<div class="note-chips" style="margin-top: 16px;">${chips}</div>`;
+  body.innerHTML = html;
 }
 
 // ============== STACK TAB ==============
@@ -2611,9 +3079,12 @@ function submitAddCompound() {
 }
 
 // ADD NOTE
-function openAddNote() {
-  document.getElementById('new-note-text').value = '';
+function openAddNote(prefill) {
+  const ta = document.getElementById('new-note-text');
+  ta.value = (typeof prefill === 'string') ? prefill : '';
   openModal('modal-add-note');
+  // Place the cursor at the end so the user types straight after the prefix.
+  setTimeout(() => { try { ta.focus(); ta.selectionStart = ta.selectionEnd = ta.value.length; } catch (e) {} }, 30);
 }
 function submitAddNote() {
   const text = document.getElementById('new-note-text').value.trim();
