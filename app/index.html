@@ -971,7 +971,43 @@
     <p class="sub">Add to your active stack.</p>
     <input type="hidden" id="edit-compound-id">
     <label>Compound name</label>
-    <input type="text" class="input-field" id="new-compound-name" placeholder="e.g. BPC-157">
+    <select class="input-field" id="new-compound-name" onchange="onCompoundNameChange()">
+      <option value="" disabled selected>Select a peptide…</option>
+      <optgroup label="Healing">
+        <option value="BPC-157" data-tag="healing">BPC-157</option>
+        <option value="TB-500" data-tag="healing">TB-500</option>
+        <option value="GHK-Cu" data-tag="healing">GHK-Cu</option>
+        <option value="Thymosin A1" data-tag="healing">Thymosin A1</option>
+      </optgroup>
+      <optgroup label="GH Secretagogue">
+        <option value="CJC-1295" data-tag="gh">CJC-1295</option>
+        <option value="Ipamorelin" data-tag="gh">Ipamorelin</option>
+        <option value="Tesamorelin" data-tag="gh">Tesamorelin</option>
+        <option value="Sermorelin" data-tag="gh">Sermorelin</option>
+        <option value="Hexarelin" data-tag="gh">Hexarelin</option>
+        <option value="GHRP-2" data-tag="gh">GHRP-2</option>
+        <option value="GHRP-6" data-tag="gh">GHRP-6</option>
+        <option value="IGF-1 LR3" data-tag="gh">IGF-1 LR3</option>
+      </optgroup>
+      <optgroup label="GLP-1">
+        <option value="Semaglutide" data-tag="glp1">Semaglutide</option>
+        <option value="Tirzepatide" data-tag="glp1">Tirzepatide</option>
+        <option value="Retatrutide" data-tag="glp1">Retatrutide</option>
+        <option value="Cagrilintide" data-tag="glp1">Cagrilintide</option>
+      </optgroup>
+      <optgroup label="Metabolic">
+        <option value="AOD-9604" data-tag="metabolic">AOD-9604</option>
+        <option value="MOTS-c" data-tag="metabolic">MOTS-c</option>
+        <option value="5-Amino-1MQ" data-tag="metabolic">5-Amino-1MQ</option>
+        <option value="Tesofensine" data-tag="metabolic">Tesofensine</option>
+      </optgroup>
+      <optgroup label="Cognitive">
+        <option value="Semax" data-tag="cognitive">Semax</option>
+        <option value="Selank" data-tag="cognitive">Selank</option>
+        <option value="Dihexa" data-tag="cognitive">Dihexa</option>
+        <option value="Cerebrolysin" data-tag="cognitive">Cerebrolysin</option>
+      </optgroup>
+    </select>
     <label>Tag</label>
     <select class="input-field" id="new-compound-tag">
       <option value="healing">Healing</option>
@@ -2475,6 +2511,36 @@ function submitNewStack() {
 
 // ADD / EDIT COMPOUND
 let _addCompoundTargetStack = null;
+
+// Compound-name <select> helpers. The field is a fixed dropdown of the
+// peptides the site supports (the ones with glyphs / protocol-card support).
+function onCompoundNameChange() {
+  const sel = document.getElementById('new-compound-name');
+  const opt = sel.options[sel.selectedIndex];
+  const tag = opt ? opt.getAttribute('data-tag') : '';
+  // Auto-fill the Tag from the chosen peptide's category (user can override).
+  if (tag) document.getElementById('new-compound-tag').value = tag;
+}
+// Select `name` in the dropdown. If it isn't one of the supported peptides
+// (e.g. a compound saved before this dropdown existed), inject a one-off
+// option so editing it doesn't silently lose or change the name.
+function setCompoundNameSelect(name) {
+  const sel = document.getElementById('new-compound-name');
+  const stale = sel.querySelector('optgroup[data-legacy]');
+  if (stale) stale.remove();
+  if (name && ![...sel.options].some(o => o.value === name)) {
+    const og = document.createElement('optgroup');
+    og.label = 'Current';
+    og.setAttribute('data-legacy', '1');
+    const o = document.createElement('option');
+    o.value = name;
+    o.textContent = name;
+    og.appendChild(o);
+    sel.insertBefore(og, sel.children[1] || null);
+  }
+  sel.value = name || '';
+}
+
 function openAddCompound() {
   if (!state.activeStackId) {
     if (state.stacks.length === 0) {
@@ -2491,7 +2557,8 @@ function openAddCompoundFor(stackId) {
   document.getElementById('compound-modal-title').textContent = 'Add compound';
   document.getElementById('compound-submit-btn').textContent = 'Add compound';
   document.getElementById('edit-compound-id').value = '';
-  ['new-compound-name','new-compound-dose','new-compound-due','new-compound-goal','new-compound-vendor','new-compound-purity'].forEach(id => document.getElementById(id).value = '');
+  ['new-compound-dose','new-compound-due','new-compound-goal','new-compound-vendor','new-compound-purity'].forEach(id => document.getElementById(id).value = '');
+  setCompoundNameSelect('');
   openModal('modal-add-compound');
 }
 function editCompound(stackId, compoundId) {
@@ -2502,7 +2569,7 @@ function editCompound(stackId, compoundId) {
   document.getElementById('compound-modal-title').textContent = 'Edit compound';
   document.getElementById('compound-submit-btn').textContent = 'Save changes';
   document.getElementById('edit-compound-id').value = compoundId;
-  document.getElementById('new-compound-name').value = c.name || '';
+  setCompoundNameSelect(c.name || '');
   document.getElementById('new-compound-tag').value = c.tag || '';
   document.getElementById('new-compound-dose').value = c.dose || '';
   document.getElementById('new-compound-freq').value = c.frequency || 'Daily';
