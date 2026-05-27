@@ -23,30 +23,76 @@
 <style>
   :root {
     color-scheme: dark;
-    --bg: #0a0a0a;
-    --panel: #111111;
-    --panel-2: #161616;
-    --border: #262626;
-    --border-2: #1f1f1f;
-    --text: #fafafa;
-    --muted: #a3a3a3;
-    --muted-2: #737373;
+    /* Surfaces — warm-dark neumorphic palette, never pure black. */
+    --bg: #14151a;
+    --panel: #1c1e25;
+    --panel-2: #22242c;
+    --panel-inset: #101116;
+    --border: rgba(255,255,255,0.045);
+    --border-2: rgba(255,255,255,0.025);
+    --text: #ecedf1;
+    --muted: #9ea3ad;
+    --muted-2: #6b6f7a;
     --accent: #34d399;
+    --accent-soft: #4ade80;
     --accent-dim: #0d4a35;
     --warn: #fbbf24;
     --danger: #f87171;
+
+    /* Radius scale — softly sculpted. */
+    --r-sm: 10px;
+    --r-md: 14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+
+    /* Neumorphic shadow system — single top-left light source.
+       Each "soft" token = subtle highlight (top-left) + ambient depth (bottom-right). */
+    --shadow-soft:
+      -8px -8px 18px rgba(255,255,255,0.022),
+       9px  9px 22px rgba(0,0,0,0.55);
+    --shadow-soft-sm:
+      -3px -3px  8px rgba(255,255,255,0.020),
+       4px  4px 10px rgba(0,0,0,0.45);
+    --shadow-soft-xs:
+      -1.5px -1.5px 4px rgba(255,255,255,0.020),
+       2px    2px   6px rgba(0,0,0,0.40);
+    /* Inset / recessed — for inputs, active tabs, pressed buttons, gauges. */
+    --shadow-inset:
+      inset  5px  5px 12px rgba(0,0,0,0.55),
+      inset -3px -3px  8px rgba(255,255,255,0.025);
+    --shadow-inset-sm:
+      inset  2px  2px  6px rgba(0,0,0,0.50),
+      inset -1.5px -1.5px 5px rgba(255,255,255,0.025);
+
+    /* Tactile hover — gentle elevation gain. */
+    --shadow-hover:
+      -10px -10px 22px rgba(255,255,255,0.030),
+       12px  12px 28px rgba(0,0,0,0.60);
   }
   * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; box-sizing: border-box; }
   .mono { font-family: 'JetBrains Mono', monospace; }
   html, body {
-    background-color: #0a0a0a !important;
+    background-color: var(--bg) !important;
+    background-image: radial-gradient(120% 80% at 0% 0%, rgba(255,255,255,0.018), transparent 60%);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
     margin: 0;
   }
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
-  .panel-2 { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; }
+  /* Raised surface — soft dual-shadow elevation, no hard border. */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-soft);
+  }
+  /* Inset surface — used inside .panel as a recessed sub-region. */
+  .panel-2 {
+    background: var(--panel-inset);
+    border: 1px solid var(--border-2);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-inset-sm);
+  }
   .muted { color: var(--muted); }
   .muted-2 { color: var(--muted-2); }
   .accent-text { color: var(--accent); }
@@ -54,20 +100,30 @@
   .danger-text { color: var(--danger); }
 
   .tab {
-    font-size: 14px; font-weight: 500; color: var(--muted);
-    padding: 8px 16px; border-radius: 8px; cursor: pointer;
-    transition: all 0.15s; background: transparent; border: none;
+    font-size: 13.5px; font-weight: 500; color: var(--muted);
+    padding: 9px 18px; border-radius: 999px; cursor: pointer;
+    transition: color 0.18s ease, box-shadow 0.22s ease, background 0.22s ease;
+    background: transparent; border: none;
   }
-  .tab:hover { color: var(--text); background: #161616; }
-  .tab.active { color: var(--accent); background: rgba(52,211,153,0.08); }
+  .tab:hover { color: var(--text); }
+  /* Active tab = recessed, like a thumb-pressed groove. */
+  .tab.active {
+    color: var(--accent);
+    background: var(--panel-inset);
+    box-shadow: var(--shadow-inset-sm);
+  }
 
   .btn-primary {
-    background: var(--accent); color: #052e1a; font-weight: 600;
-    padding: 9px 16px; border-radius: 9px; font-size: 13px;
-    cursor: pointer; border: none; transition: opacity 0.15s;
-    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(180deg, #3edda1, #2dc485);
+    color: #062b1a; font-weight: 600;
+    padding: 11px 18px; border-radius: var(--r-md); font-size: 13px;
+    cursor: pointer; border: none;
+    display: inline-flex; align-items: center; gap: 8px;
+    box-shadow: var(--shadow-soft-sm), inset 0 1px 0 rgba(255,255,255,0.18);
+    transition: transform 0.12s ease, box-shadow 0.22s ease, filter 0.15s;
   }
-  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:hover { filter: brightness(1.05); box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255,255,255,0.22); }
+  .btn-primary:active { transform: translateY(1px); box-shadow: var(--shadow-inset-sm); filter: brightness(0.96); }
   /* Header CTA — slightly tighter on desktop, icon-only on mobile so the
      header doesn't feel dominated by one giant green button. */
   #header-log-cta { padding: 8px 14px; font-size: 12.5px; }
@@ -77,24 +133,35 @@
     #header-log-cta-label { display: none; }
   }
   .btn-small {
-    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
-    font-weight: 500; padding: 6px 12px; border-radius: 7px;
-    font-size: 12px; cursor: pointer; transition: all 0.15s;
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    font-weight: 500; padding: 8px 14px; border-radius: var(--r-md);
+    font-size: 12px; cursor: pointer;
+    box-shadow: var(--shadow-soft-xs);
+    transition: box-shadow 0.22s ease, transform 0.12s, color 0.15s;
   }
-  .btn-small:hover { background: #1f1f1f; border-color: #333; }
+  .btn-small:hover { box-shadow: var(--shadow-soft-sm); color: var(--text); }
+  .btn-small:active { transform: translateY(1px); box-shadow: var(--shadow-inset-sm); }
   .btn-danger {
-    background: transparent; color: var(--danger); border: 1px solid rgba(248,113,113,0.3);
-    font-weight: 500; padding: 6px 12px; border-radius: 7px;
-    font-size: 12px; cursor: pointer; transition: all 0.15s;
+    background: var(--panel); color: var(--danger); border: 1px solid rgba(248,113,113,0.16);
+    font-weight: 500; padding: 8px 14px; border-radius: var(--r-md);
+    font-size: 12px; cursor: pointer;
+    box-shadow: var(--shadow-soft-xs);
+    transition: box-shadow 0.22s ease, transform 0.12s, background 0.18s;
   }
-  .btn-danger:hover { background: rgba(248,113,113,0.08); border-color: var(--danger); }
+  .btn-danger:hover { box-shadow: var(--shadow-soft-sm); background: rgba(248,113,113,0.06); }
+  .btn-danger:active { transform: translateY(1px); box-shadow: var(--shadow-inset-sm); }
   .btn-log {
-    background: transparent; color: var(--accent); border: 1px solid rgba(52,211,153,0.25);
-    font-weight: 500; padding: 4px 14px; border-radius: 999px;
-    font-size: 12px; cursor: pointer; font-family: 'JetBrains Mono', monospace;
-    text-transform: uppercase; letter-spacing: 0.08em; transition: all 0.15s;
+    background: var(--panel-inset); color: var(--accent); border: none;
+    font-weight: 600; padding: 6px 16px; border-radius: 999px;
+    font-size: 11.5px; cursor: pointer; font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.10em;
+    box-shadow: var(--shadow-inset-sm), 0 0 0 1px rgba(52,211,153,0.18) inset;
+    transition: box-shadow 0.20s ease, color 0.15s;
   }
-  .btn-log:hover { background: rgba(52,211,153,0.08); border-color: var(--accent); }
+  .btn-log:hover {
+    color: var(--accent-soft);
+    box-shadow: var(--shadow-inset-sm), 0 0 0 1px rgba(52,211,153,0.42) inset, 0 0 18px rgba(52,211,153,0.16);
+  }
 
   .pill-streak {
     display: inline-flex; align-items: center; gap: 6px;
@@ -110,9 +177,10 @@
   .badge {
     display: inline-flex; align-items: center; font-size: 10.5px;
     font-family: 'JetBrains Mono', monospace; text-transform: uppercase;
-    letter-spacing: 0.07em; padding: 2px 9px; border-radius: 5px;
+    letter-spacing: 0.10em; padding: 3px 11px; border-radius: 999px;
     font-weight: 500; border: 1px solid var(--border);
-    background: var(--panel-2); color: var(--muted);
+    background: var(--panel-inset); color: var(--muted);
+    box-shadow: var(--shadow-inset-sm);
   }
   .badge.healing { color: #93c5fd; border-color: rgba(147,197,253,0.25); background: rgba(147,197,253,0.06); }
   .badge.glp1 { color: #c4b5fd; border-color: rgba(196,181,253,0.25); background: rgba(196,181,253,0.06); }
@@ -130,14 +198,14 @@
   }
   .dose-day.today .dose-day-label { color: var(--accent); font-weight: 700; }
   .dose-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--border); display: block; transition: background 0.15s;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--panel-inset); display: block;
+    box-shadow: var(--shadow-inset-sm);
+    transition: background 0.18s, box-shadow 0.18s;
   }
-  .dose-dot.filled { background: var(--accent); }
-  .dose-day.today .dose-dot { box-shadow: 0 0 0 2px rgba(52,211,153,0.3); }
-  .dose-day.today .dose-dot:not(.filled) {
-    background: #0a0a0a; border: 1px solid var(--accent);
-  }
+  .dose-dot.filled { background: var(--accent); box-shadow: 0 0 10px rgba(52,211,153,0.45); }
+  .dose-day.today .dose-dot { box-shadow: var(--shadow-inset-sm), 0 0 0 2px rgba(52,211,153,0.30); }
+  .dose-day.today .dose-dot.filled { box-shadow: 0 0 12px rgba(52,211,153,0.55), 0 0 0 2px rgba(52,211,153,0.35); }
 
   .progress { height: 3px; background: var(--border); border-radius: 999px; overflow: hidden; }
   .progress-fill {
@@ -145,17 +213,22 @@
   }
 
   .input-field {
-    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
-    padding: 10px 13px; border-radius: 9px; font-size: 14px; width: 100%;
-    transition: border-color 0.15s;
+    background: var(--panel-inset);
+    border: 1px solid transparent;
+    color: var(--text);
+    padding: 12px 14px; border-radius: var(--r-md);
+    font-size: 14px; width: 100%;
+    box-shadow: var(--shadow-inset-sm);
+    transition: box-shadow 0.22s ease, border-color 0.18s;
   }
-  .input-field:focus { outline: none; border-color: rgba(52,211,153,0.5); }
+  .input-field:focus { outline: none; border-color: rgba(52,211,153,0.45); box-shadow: var(--shadow-inset); }
 
   .avatar {
-    width: 30px; height: 30px; border-radius: 50%;
-    background: var(--accent-dim); color: var(--accent);
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--panel-inset); color: var(--accent);
     display: inline-flex; align-items: center; justify-content: center;
-    font-weight: 600; font-size: 12px; border: 1px solid rgba(52,211,153,0.3);
+    font-weight: 600; font-size: 12px; border: none;
+    box-shadow: var(--shadow-inset-sm), 0 0 0 1px rgba(52,211,153,0.20);
   }
 
   .logged-text { text-decoration: line-through; color: var(--muted-2); }
@@ -169,9 +242,9 @@
   }
   .modal-backdrop.active { display: flex; }
   .modal {
-    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
-    width: 100%; max-width: 520px; padding: 28px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-xl);
+    width: 100%; max-width: 520px; padding: 30px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.55), var(--shadow-soft);
     max-height: 90vh; overflow-y: auto;
   }
   .modal h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 4px; }
@@ -532,23 +605,26 @@
      TODAY PAGE — redesigned dashboard
      ============================================================ */
   .today-hero {
-    border-radius: 20px;
-    padding: 34px 38px;
+    border-radius: var(--r-xl);
+    padding: 36px 40px;
     display: grid;
-    grid-template-columns: 1fr 340px;
+    grid-template-columns: 1fr 360px;
     gap: 0;
     background:
-      radial-gradient(120% 140% at 88% 10%, rgba(52,211,153,0.07), transparent 60%),
+      radial-gradient(110% 130% at 92% 8%, rgba(52,211,153,0.06), transparent 58%),
       var(--panel);
-    margin-bottom: 22px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
   }
-  .hero-left { min-width: 0; padding-right: 36px; }
+  .hero-left { min-width: 0; padding-right: 38px; }
   .hero-right {
-    border-left: 1px solid var(--border);
-    padding-left: 36px;
+    /* Subtle vertical divider via gradient, not a hard border. */
+    padding-left: 38px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.035), transparent 1px);
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    gap: 18px;
+    gap: 20px;
   }
   .hero-eyebrow {
     font-family: 'JetBrains Mono', monospace;
@@ -557,8 +633,8 @@
     display: flex; align-items: center; gap: 10px;
   }
   .hero-eyebrow .dot {
-    width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
-    box-shadow: 0 0 8px rgba(52,211,153,0.7);
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 10px rgba(52,211,153,0.75);
   }
   .hero-greeting {
     font-size: 52px; font-weight: 800; letter-spacing: -0.035em;
@@ -566,7 +642,7 @@
   }
   .hero-subline { font-size: 14.5px; color: var(--muted); }
   .hero-subline strong { color: var(--text); font-weight: 600; }
-  .hero-subline .sep { color: var(--border); margin: 0 9px; }
+  .hero-subline .sep { color: var(--muted-2); margin: 0 10px; opacity: 0.5; }
   .hero-subline .moon { color: var(--accent); }
 
   .wc-head {
@@ -577,16 +653,25 @@
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted-2);
   }
-  .wc-range { display: inline-flex; gap: 2px; }
+  /* Segmented range — sits in a recessed groove; active pill = subtly raised. */
+  .wc-range {
+    display: inline-flex; gap: 2px;
+    background: var(--panel-inset); padding: 4px;
+    border-radius: 999px; box-shadow: var(--shadow-inset-sm);
+  }
   .wc-range button {
     background: transparent; border: none; cursor: pointer;
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    color: var(--muted-2); padding: 4px 9px; border-radius: 6px;
-    transition: all 0.15s;
+    color: var(--muted-2); padding: 5px 12px; border-radius: 999px;
+    transition: color 0.18s ease, box-shadow 0.22s ease, background 0.22s;
   }
   .wc-range button:hover { color: var(--text); }
-  .wc-range button.active { background: rgba(52,211,153,0.12); color: var(--accent); }
-  .wc-score { display: flex; align-items: baseline; gap: 4px; margin-top: 10px; }
+  .wc-range button.active {
+    background: var(--panel);
+    color: var(--accent);
+    box-shadow: var(--shadow-soft-xs);
+  }
+  .wc-score { display: flex; align-items: baseline; gap: 4px; margin-top: 12px; }
   .wc-score .num { font-size: 62px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
   .wc-score .unit { font-size: 22px; color: var(--muted-2); font-weight: 600; }
   .wc-score .delta {
@@ -603,8 +688,13 @@
     color: var(--muted-2); font-size: 13px; text-align: center;
   }
 
-  /* dose ring */
-  .dose-ring { position: relative; width: 200px; height: 200px; }
+  /* dose ring — sits in a soft recessed well with a glowing progress arc. */
+  .dose-ring {
+    position: relative; width: 210px; height: 210px;
+    border-radius: 50%;
+    box-shadow: var(--shadow-inset);
+    background: var(--panel-inset);
+  }
   .dose-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
   .dose-ring-center {
     position: absolute; inset: 0;
@@ -619,68 +709,89 @@
   }
   .dose-ring-cap { font-size: 13px; color: var(--muted); text-align: center; }
   .dose-ring-cap strong { color: var(--text); font-weight: 600; }
+  /* Big primary CTA below the ring — soft raised, like a phone shortcut button. */
   .hero-cta {
-    width: 100%; background: var(--accent); color: #052e1a;
-    font-weight: 700; font-size: 14px; padding: 14px; border-radius: 12px;
-    border: none; cursor: pointer; transition: opacity 0.15s;
+    width: 100%;
+    background: linear-gradient(180deg, #3edda1, #2dc485);
+    color: #062b1a;
+    font-weight: 700; font-size: 14px; padding: 15px;
+    border-radius: var(--r-lg);
+    border: none; cursor: pointer;
+    box-shadow: var(--shadow-soft-sm), inset 0 1px 0 rgba(255,255,255,0.20);
+    transition: transform 0.12s, box-shadow 0.22s, filter 0.15s;
   }
-  .hero-cta:hover { opacity: 0.92; }
+  .hero-cta:hover { filter: brightness(1.05); box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255,255,255,0.22); }
+  .hero-cta:active { transform: translateY(1px); box-shadow: var(--shadow-inset-sm); filter: brightness(0.96); }
   .hero-cta.done {
-    background: transparent; color: var(--accent);
-    border: 1px solid rgba(52,211,153,0.3); cursor: default;
+    background: var(--panel-inset); color: var(--accent);
+    box-shadow: var(--shadow-inset-sm), 0 0 0 1px rgba(52,211,153,0.18) inset;
+    cursor: default;
   }
 
-  /* metric row */
+  /* metric row — four softly raised platforms. */
   .tm-row {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
-    margin-bottom: 22px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;
+    margin-bottom: 24px;
   }
-  .tm-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px 20px 16px; }
+  .tm-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 22px 22px 18px;
+    box-shadow: var(--shadow-soft);
+  }
   .tm-head { display: flex; align-items: center; justify-content: space-between; }
   .tm-label {
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted-2);
   }
+  /* Delta chip — inset, sits flush in the card surface. */
   .tm-delta {
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    padding: 3px 8px; border-radius: 6px;
-    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted-2);
+    padding: 4px 10px; border-radius: 999px;
+    background: var(--panel-inset); color: var(--muted-2);
+    box-shadow: var(--shadow-inset-sm);
+    border: 1px solid transparent;
   }
-  .tm-delta.up { color: var(--accent); border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.07); }
-  .tm-delta.down { color: var(--warn); border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.07); }
-  .tm-value { display: flex; align-items: baseline; gap: 3px; margin-top: 12px; }
+  .tm-delta.up { color: var(--accent); box-shadow: var(--shadow-inset-sm), 0 0 0 1px rgba(52,211,153,0.25) inset; }
+  .tm-delta.down { color: var(--warn); box-shadow: var(--shadow-inset-sm), 0 0 0 1px rgba(251,191,36,0.25) inset; }
+  .tm-value { display: flex; align-items: baseline; gap: 3px; margin-top: 14px; }
   .tm-value .num { font-size: 38px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
   .tm-value .unit { font-size: 14px; color: var(--muted-2); }
-  .tm-spark { height: 44px; margin: 10px 0 8px; }
+  .tm-spark { height: 44px; margin: 12px 0 10px; }
   .tm-spark svg { display: block; width: 100%; height: 100%; }
   .tm-foot {
     display: flex; align-items: center; justify-content: space-between;
     font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
-    letter-spacing: 0.06em; color: var(--muted-2); padding-top: 10px;
+    letter-spacing: 0.06em; color: var(--muted-2); padding-top: 12px;
     border-top: 1px solid var(--border-2);
   }
 
   /* today grid */
-  .today-grid { display: grid; grid-template-columns: 1fr 372px; gap: 22px; }
-  .today-col-main, .today-col-side { display: flex; flex-direction: column; gap: 22px; }
+  .today-grid { display: grid; grid-template-columns: 1fr 392px; gap: 24px; }
+  .today-col-main, .today-col-side { display: flex; flex-direction: column; gap: 24px; }
 
-  .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
   .section-title { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
   .section-sub {
     font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
     text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-2); margin-top: 5px;
   }
 
-  /* protocol rows */
+  /* protocol rows — recessed slots inside the protocol panel. */
   .proto-row {
     display: flex; align-items: center; gap: 16px;
-    background: var(--panel-2); border: 1px solid var(--border);
-    border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+    background: var(--panel-inset);
+    border: 1px solid var(--border-2);
+    border-radius: var(--r-md);
+    padding: 15px 18px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-inset-sm);
   }
   .proto-row:last-child { margin-bottom: 0; }
   .proto-time {
     font-family: 'JetBrains Mono', monospace; font-size: 12px;
-    color: var(--muted-2); min-width: 74px; flex-shrink: 0;
+    color: var(--muted-2); min-width: 80px; flex-shrink: 0;
   }
   .proto-body { flex: 1; min-width: 0; }
   .proto-name { font-size: 15px; font-weight: 600; }
@@ -689,19 +800,25 @@
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     color: var(--muted-2); margin-top: 4px;
   }
+  /* "Logged" status pill — sits flush, with an accent ring. */
   .proto-logged {
     display: inline-flex; align-items: center; gap: 6px;
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent);
-    background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25);
-    padding: 6px 12px; border-radius: 8px;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent);
+    background: var(--panel);
+    padding: 7px 13px; border-radius: 999px;
+    box-shadow: var(--shadow-soft-xs), 0 0 0 1px rgba(52,211,153,0.22) inset;
   }
 
-  /* stack rows */
+  /* stack rows — softly raised cards with a coloured edge bar. */
   .stack-row {
-    background: var(--panel-2); border: 1px solid var(--border);
+    background: var(--panel);
+    border: 1px solid var(--border);
     border-left: 3px solid var(--muted-2);
-    border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+    border-radius: var(--r-md);
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-soft-sm);
   }
   .stack-row:last-child { margin-bottom: 0; }
   .stack-row-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -713,84 +830,96 @@
   .stack-adherence {
     font-family: 'JetBrains Mono', monospace; font-size: 10px;
     text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-2);
-    margin-top: 5px; text-align: right;
+    margin-top: 6px; text-align: right;
   }
 
   /* check-in card */
   .checkin-badge {
     display: inline-flex; align-items: center; gap: 7px;
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent);
-    background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25);
-    padding: 6px 11px; border-radius: 8px; margin-bottom: 16px;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent);
+    background: var(--panel-inset);
+    padding: 7px 13px; border-radius: 999px; margin-bottom: 18px;
+    box-shadow: var(--shadow-inset-sm), 0 0 0 1px rgba(52,211,153,0.20) inset;
   }
-  .checkin-mini-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .checkin-mini-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
   .checkin-mini {
-    background: var(--panel-2); border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px 10px; text-align: center;
+    background: var(--panel-inset);
+    border: 1px solid var(--border-2);
+    border-radius: var(--r-md); padding: 14px 10px; text-align: center;
+    box-shadow: var(--shadow-inset-sm);
   }
   .checkin-mini .lbl {
     font-family: 'JetBrains Mono', monospace; font-size: 9px;
-    text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-2);
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted-2);
   }
-  .checkin-mini .val { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-top: 6px; }
+  .checkin-mini .val { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-top: 8px; }
   .checkin-mini .val .u { font-size: 11px; color: var(--muted-2); font-weight: 500; }
   .btn-wide {
-    width: 100%; background: var(--panel-2); color: var(--text);
+    width: 100%; background: var(--panel); color: var(--text);
     border: 1px solid var(--border); font-weight: 600; font-size: 13px;
-    padding: 11px; border-radius: 10px; cursor: pointer; transition: all 0.15s;
+    padding: 12px; border-radius: var(--r-md); cursor: pointer;
+    box-shadow: var(--shadow-soft-xs);
+    transition: box-shadow 0.22s, transform 0.12s;
   }
-  .btn-wide:hover { border-color: #333; background: #1f1f1f; }
+  .btn-wide:hover { box-shadow: var(--shadow-soft-sm); }
+  .btn-wide:active { transform: translateY(1px); box-shadow: var(--shadow-inset-sm); }
 
-  /* streak card */
-  .streak-card { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 26px 24px; }
+  /* streak card — round soft moon dial. */
+  .streak-card { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 30px 26px; }
   .streak-moon {
-    width: 56px; height: 56px; border-radius: 50%;
-    background: rgba(52,211,153,0.10); border: 1px solid rgba(52,211,153,0.3);
+    width: 62px; height: 62px; border-radius: 50%;
+    background: var(--panel-inset);
+    box-shadow: var(--shadow-inset-sm), 0 0 0 1px rgba(52,211,153,0.20), 0 0 22px rgba(52,211,153,0.15);
     display: flex; align-items: center; justify-content: center; color: var(--accent);
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
   .streak-card.cold .streak-moon {
-    background: rgba(115,115,115,0.08); border-color: rgba(115,115,115,0.25); color: var(--muted-2);
+    box-shadow: var(--shadow-inset-sm), 0 0 0 1px rgba(115,115,115,0.18);
+    color: var(--muted-2);
   }
   .streak-big { font-size: 54px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
   .streak-card.cold .streak-big { color: var(--muted-2); }
   .streak-lbl {
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted-2); margin-top: 8px;
+    text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted-2); margin-top: 10px;
   }
-  .streak-msg { font-size: 13px; color: var(--muted); margin-top: 12px; line-height: 1.5; max-width: 240px; }
+  .streak-msg { font-size: 13px; color: var(--muted); margin-top: 14px; line-height: 1.55; max-width: 240px; }
 
   /* notes card */
-  .notes-blurb { font-size: 13.5px; color: var(--muted); line-height: 1.55; text-align: center; margin: 6px 0 16px; }
-  .note-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .notes-blurb { font-size: 13.5px; color: var(--muted); line-height: 1.55; text-align: center; margin: 6px 0 18px; }
+  .note-chips { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; }
   .note-chip {
-    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
-    font-size: 12px; padding: 7px 13px; border-radius: 999px; cursor: pointer;
-    transition: all 0.15s;
+    background: var(--panel); color: var(--muted);
+    border: 1px solid var(--border);
+    font-size: 12px; padding: 8px 14px; border-radius: 999px; cursor: pointer;
+    box-shadow: var(--shadow-soft-xs);
+    transition: box-shadow 0.22s, color 0.18s, transform 0.12s;
   }
-  .note-chip:hover { border-color: rgba(52,211,153,0.4); color: var(--text); }
+  .note-chip:hover { color: var(--text); box-shadow: var(--shadow-soft-sm); }
+  .note-chip:active { transform: translateY(1px); box-shadow: var(--shadow-inset-sm); }
   .today-note-item {
-    border-left: 2px solid var(--accent-dim); padding-left: 12px; margin-top: 14px;
+    border-left: 2px solid var(--accent-dim); padding-left: 14px; margin-top: 16px;
   }
   .today-note-item .nd {
     font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
     color: var(--muted-2); letter-spacing: 0.05em; margin-bottom: 5px;
   }
-  .today-note-item .nt { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .today-note-item .nt { font-size: 13px; color: var(--muted); line-height: 1.55; }
 
   @media (max-width: 1080px) {
     .today-hero { grid-template-columns: 1fr; }
     .hero-left { padding-right: 0; }
     .hero-right {
-      border-left: none; border-top: 1px solid var(--border);
-      padding-left: 0; padding-top: 24px; margin-top: 24px;
+      background: none;
+      padding-left: 0; padding-top: 26px; margin-top: 26px;
+      border-top: 1px solid var(--border);
     }
     .today-grid { grid-template-columns: 1fr; }
     .tm-row { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 560px) {
-    .today-hero { padding: 24px 20px; }
+    .today-hero { padding: 26px 22px; }
     .hero-greeting { font-size: 38px; }
     .wc-score .num { font-size: 48px; }
     .tm-row { grid-template-columns: 1fr 1fr; }
@@ -1747,9 +1876,20 @@ function renderDoseRing() {
   const off = circ * (1 - pct / 100);
   document.getElementById('dose-ring').innerHTML = `
     <svg viewBox="0 0 200 200">
-      <circle cx="100" cy="100" r="${r}" fill="none" stroke="#1f1f1f" stroke-width="15"/>
-      <circle cx="100" cy="100" r="${r}" fill="none" stroke="#34d399" stroke-width="15"
-        stroke-linecap="round" stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
+      <defs>
+        <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#4ade80"/>
+          <stop offset="1" stop-color="#22c585"/>
+        </linearGradient>
+        <filter id="ringGlow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="3.6" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <circle cx="100" cy="100" r="${r}" fill="none" stroke="rgba(255,255,255,0.045)" stroke-width="13"/>
+      <circle cx="100" cy="100" r="${r}" fill="none" stroke="url(#ringGrad)" stroke-width="13"
+        stroke-linecap="round" stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"
+        filter="url(#ringGlow)"/>
     </svg>
     <div class="dose-ring-center">
       <div class="dose-ring-pct">${pct}<span class="sm">%</span></div>
